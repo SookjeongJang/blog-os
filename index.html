@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#12162b" />
+  <title>Blog OS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="stars"></div>
+
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">CONTENT OPERATING SYSTEM</p>
+        <h1>Blog OS</h1>
+      </div>
+      <button class="icon-btn" id="themeBtn" aria-label="테마 전환">☾</button>
+    </header>
+
+    <section class="hero">
+      <div>
+        <span class="status-dot"></span>
+        <span>오늘도 자동화가 정상 작동 중이에요</span>
+      </div>
+      <h2>오늘 쓸 글만<br><strong>가볍게 고르세요.</strong></h2>
+      <p>복잡한 시트 대신, 추천 글감과 발행 상태만 한눈에 보여드릴게요.</p>
+      <div class="hero-actions">
+        <button class="primary-btn" id="collectBtn">오늘 글감 가져오기</button>
+        <button class="ghost-btn" data-tab-target="ideas">추천 글감 보기</button>
+      </div>
+    </section>
+
+    <section class="stats-grid">
+      <article class="stat-card">
+        <span>오늘 글감</span>
+        <strong id="ideaCount">12</strong>
+        <small>새 추천</small>
+      </article>
+      <article class="stat-card">
+        <span>발행 대기</span>
+        <strong id="waitingCount">4</strong>
+        <small>확인 필요</small>
+      </article>
+      <article class="stat-card">
+        <span>이번 주 발행</span>
+        <strong>38</strong>
+        <small>+12%</small>
+      </article>
+    </section>
+
+    <section class="panel active" id="homePanel">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">TODAY'S PICK</p>
+          <h3>오늘 먼저 쓰면 좋은 글</h3>
+        </div>
+        <button class="text-btn" data-tab-target="ideas">전체보기 →</button>
+      </div>
+      <div id="topIdeas" class="idea-list"></div>
+    </section>
+
+    <section class="panel" id="ideasPanel">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">IDEAS</p>
+          <h3>오늘의 글감</h3>
+        </div>
+        <div class="filter-wrap">
+          <select id="categoryFilter">
+            <option value="all">전체</option>
+            <option value="정부지원">정부지원</option>
+            <option value="경제">경제</option>
+            <option value="생활정보">생활정보</option>
+            <option value="축제">축제</option>
+          </select>
+        </div>
+      </div>
+      <div id="allIdeas" class="idea-list"></div>
+    </section>
+
+    <section class="panel" id="contentPanel">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">CONTENT</p>
+          <h3>콘텐츠 진행 상태</h3>
+        </div>
+      </div>
+      <div class="kanban">
+        <div class="kanban-col">
+          <div class="kanban-title"><span>작성 전</span><b id="draftCount">3</b></div>
+          <div id="draftList"></div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-title"><span>발행 대기</span><b id="queueCount">2</b></div>
+          <div id="queueList"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="settingsPanel">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">SETTINGS</p>
+          <h3>간단 설정</h3>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <label>
+          <span>하루 목표 글 수</span>
+          <input type="number" id="dailyGoal" value="10" min="1" max="50" />
+        </label>
+        <label>
+          <span>기본 생성 모드</span>
+          <select id="defaultMode">
+            <option>Standard</option>
+            <option>Premium</option>
+            <option>Template</option>
+            <option>Update</option>
+          </select>
+        </label>
+        <label class="switch-row">
+          <span>
+            <b>비용 절약 모드</b>
+            <small>핵심 글만 고품질로 생성해요.</small>
+          </span>
+          <input type="checkbox" id="saveMode" checked />
+        </label>
+        <button class="primary-btn full" id="saveSettingsBtn">설정 저장</button>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-tab="home">
+      <span>⌂</span><small>홈</small>
+    </button>
+    <button class="nav-item" data-tab="ideas">
+      <span>✦</span><small>오늘의 글감</small>
+    </button>
+    <button class="nav-item" data-tab="content">
+      <span>▤</span><small>콘텐츠</small>
+    </button>
+    <button class="nav-item" data-tab="settings">
+      <span>⚙</span><small>설정</small>
+    </button>
+  </nav>
+
+  <div id="toast" class="toast">완료했어요</div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
