@@ -1,32 +1,76 @@
-const API_URL = 'https://script.google.com/macros/s/AKfycbwCOyxrS93IRXDM-bKdmVeo2okUo_CudJx5GD0USHVZfy2JXOeLPEfOXdEMjvQpq89TPg/exec';
+const API_URL = "https://script.google.com/macros/s/AKfycbwCOyxrS93IRXDM-bKdmVeo2okUo_CudJx5GD0USHVZfy2JXOeLPEfOXdEMjvQpq89TPg/exec";
 
 let ideas = [];
-let picked = JSON.parse(localStorage.getItem('blogos_picked') || '[]');
+let selectedIdea = null;
+let activeCategory = '전체';
+let draft = JSON.parse(localStorage.getItem('blogos_draft') || 'null');
 
 const panels = {
   home: document.getElementById('homePanel'),
   ideas: document.getElementById('ideasPanel'),
-  content: document.getElementById('contentPanel'),
-  settings: document.getElementById('settingsPanel')
+  writer: document.getElementById('writerPanel'),
+  preview: document.getElementById('previewPanel'),
+  content: document.getElementById('contentPanel')
 };
 
-function showToast(message){
+function showToast(message) {
   const toast = document.getElementById('toast');
   toast.textContent = message;
   toast.classList.add('show');
   clearTimeout(window.__toastTimer);
-  window.__toastTimer = setTimeout(()=>toast.classList.remove('show'),1800);
+  window.__toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
 }
 
-function switchTab(name){
-  Object.entries(panels).forEach(([key,panel])=>panel.classList.toggle('active',key===name));
-  document.querySelectorAll('.nav-item').forEach(btn=>btn.classList.toggle('active',btn.dataset.tab===name));
-  window.scrollTo({top:0,behavior:'smooth'});
-  render();
+function showView(view) {
+  Object.entries(panels).forEach(([key, panel]) => panel.classList.toggle('active', key === view));
+
+  const showHomeExtras = view === 'home';
+  document.getElementById('homeView').classList.toggle('hidden', !showHomeExtras);
+  document.getElementById('statsView').classList.toggle('hidden', !showHomeExtras);
+
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    const navView = (view === 'writer' || view === 'preview') ? 'content' : view;
+    btn.classList.toggle('active', btn.dataset.view === navView);
+  });
+
+  if (view === 'content') renderDraft();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function esc(value){
-  return String(value ?? '')
+function normalizeIdea(row, index) {
+  return {
+    id: index,
+    category: String(row['카테고리'] || '기타').trim(),
+    title: String(row['제목'] || '제목 없음').trim(),
+    subtitle: String(row['서브제목'] || '').trim(),
+    point: String(row['포인트'] || '').trim(),
+    status: String(row['상태'] || '대기').trim(),
+    priority: Number(row['우선순위']) || 99
+  };
+}
+
+function ideaCard(item) {
+  return `
+    <article class="idea-card">
+      <div class="idea-top">
+        <div>
+          <div class="tag-row">
+            <span class="tag">${escapeHtml(item.category)}</span>
+            <span class="tag">${escapeHtml(item.status)}</span>
+          </div>
+          <h4>${escapeHtml(item.title)}</h4>
+          ${item.subtitle ? `<div class="subtitle">${escapeHtml(item.subtitle)}</div>` : ''}
+        </div>
+        <div class="priority">${item.priority === 99 ? '-' : item.priority}</div>
+      </div>
+      <p>${escapeHtml(item.point || '핵심 포인트가 아직 입력되지 않았어요.')}</p>
+      <button class="small-btn primary" onclick="startWriting(${item.id})">작성하기</button>
+    </article>
+  `;
+}
+
+function escapeHtml(value) {
+  return String(value)
     .replaceAll('&','&amp;')
     .replaceAll('<','&lt;')
     .replaceAll('>','&gt;')
@@ -34,162 +78,176 @@ function esc(value){
     .replaceAll("'",'&#039;');
 }
 
-function normalize(row,index){
-  const rawPriority = row['우선순위'];
-  const priority = rawPriority === '' || rawPriority == null ? 99 : Number(rawPriority);
+function renderIdeas() {
+  const sorted = [...ideas].sort((a,b) => a.priority - b.priority || a.title.localeCompare(b.title, 'ko'));
+
+  document.getElementById('ideaCount').textContent = ideas.length;
+  document.getElementById('waitingCount').textContent = ideas.filter(i => i.status === '대기').length;
+  document.getElementById('priorityCount').textContent = ideas.filter(i => i.priority === 1).length;
+
+  document.getElementById('topIdeas').innerHTML =
+    sorted.slice(0,3).map(ideaCard).join('') ||
+    '<div class="empty-card">아직 오늘의 글감이 없어요.</div>';
+
+  const filtered = activeCategory === '전체'
+    ? sorted
+    : sorted.filter(i => i.category === activeCategory);
+
+  document.getElementById('allIdeas').innerHTML =
+    filtered.map(ideaCard).join('') ||
+    '<div class="empty-card">해당 카테고리의 글감이 없어요.</div>';
+
+  renderCategoryFilters();
+}
+
+function renderCategoryFilters() {
+  const cats = ['전체', ...new Set(ideas.map(i => i.category))];
+  document.getElementById('categoryFilters').innerHTML = cats.map(cat => `
+    <button class="filter-chip ${activeCategory === cat ? 'active' : ''}" onclick="setCategory('${encodeURIComponent(cat)}')">
+      ${escapeHtml(cat)}
+    </button>
+  `).join('');
+}
+
+window.setCategory = function(encoded) {
+  activeCategory = decodeURIComponent(encoded);
+  renderIdeas();
+}
+
+window.startWriting = function(id) {
+  selectedIdea = ideas.find(i => i.id === id);
+  if (!selectedIdea) return;
+
+  document.getElementById('writerCategory').value = selectedIdea.category;
+  document.getElementById('writerTitle').value = selectedIdea.title;
+  document.getElementById('writerPoint').value = selectedIdea.point;
+  document.getElementById('writerHtml').value = '';
+  showView('writer');
+}
+
+function getWriterDraft() {
   return {
-    id: `${index}-${row['제목'] || ''}`,
-    category: String(row['카테고리'] || '기타').trim(),
-    title: String(row['제목'] || '').trim(),
-    subtitle: String(row['서브제목'] || '').trim(),
-    point: String(row['포인트'] || '').trim(),
-    status: String(row['상태'] || '대기').trim(),
-    priority: Number.isFinite(priority) ? priority : 99
+    category: document.getElementById('writerCategory').value.trim(),
+    title: document.getElementById('writerTitle').value.trim(),
+    point: document.getElementById('writerPoint').value.trim(),
+    html: document.getElementById('writerHtml').value
   };
 }
 
-function ideaCard(item){
-  const isPicked = picked.some(p=>p.title===item.title);
-  return `
+function saveDraft() {
+  draft = getWriterDraft();
+  localStorage.setItem('blogos_draft', JSON.stringify(draft));
+  showToast('초안을 저장했어요');
+}
+
+function renderPreview() {
+  draft = getWriterDraft();
+  localStorage.setItem('blogos_draft', JSON.stringify(draft));
+
+  document.getElementById('previewCategory').textContent = draft.category || '기타';
+  document.getElementById('previewTitle').textContent = draft.title || '제목 없음';
+  document.getElementById('previewPoint').textContent = draft.point || '';
+  document.getElementById('previewHtml').innerHTML = draft.html || '<p>HTML 본문이 아직 없어요.</p>';
+}
+
+function renderDraft() {
+  const card = document.getElementById('draftCard');
+  const empty = document.getElementById('draftEmpty');
+
+  if (!draft) {
+    card.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+
+  empty.classList.add('hidden');
+  card.innerHTML = `
     <article class="idea-card">
-      <div class="idea-top">
-        <div>
-          <div class="tag-row">
-            <span class="tag">${esc(item.category)}</span>
-            <span class="tag">${esc(item.status)}</span>
-          </div>
-          <h4>${esc(item.title)}</h4>
-        </div>
-        <div class="score">${item.priority === 99 ? '-' : item.priority}</div>
-      </div>
-      ${item.subtitle ? `<p style="margin-bottom:6px;color:var(--text)">${esc(item.subtitle)}</p>` : ''}
-      <p>${item.point ? esc(item.point) : '포인트가 아직 입력되지 않았어요.'}</p>
-      <div class="card-actions">
-        <button class="${isPicked ? 'small-btn done' : 'small-btn primary'}" onclick="pickIdea('${encodeURIComponent(item.title)}')">
-          ${isPicked ? '고른 글 ✓' : '작성하기'}
-        </button>
-      </div>
-    </article>`;
+      <div class="tag-row"><span class="tag">${escapeHtml(draft.category || '기타')}</span></div>
+      <h4>${escapeHtml(draft.title || '제목 없음')}</h4>
+      <p>${escapeHtml(draft.point || '저장된 초안이 있어요.')}</p>
+      <button class="small-btn primary" id="continueDraftBtn">계속 작성</button>
+    </article>
+  `;
+
+  document.getElementById('continueDraftBtn').addEventListener('click', () => {
+    selectedIdea = null;
+    document.getElementById('writerCategory').value = draft.category || '';
+    document.getElementById('writerTitle').value = draft.title || '';
+    document.getElementById('writerPoint').value = draft.point || '';
+    document.getElementById('writerHtml').value = draft.html || '';
+    showView('writer');
+  });
 }
 
-function updateCategoryFilter(){
-  const select = document.getElementById('categoryFilter');
-  if(!select) return;
-  const current = select.value || 'all';
-  const categories = [...new Set(ideas.map(x=>x.category).filter(Boolean))].sort();
-  select.innerHTML = '<option value="all">전체</option>' + categories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
-  select.value = categories.includes(current) ? current : 'all';
-}
+function setConnectionState(state) {
+  const dot = document.getElementById('statusDot');
+  const text = document.getElementById('systemStatusText');
 
-function render(){
-  const sorted = [...ideas].sort((a,b)=>a.priority-b.priority || a.title.localeCompare(b.title,'ko'));
-  const waiting = ideas.filter(i=>i.status==='대기').length;
-  const priorityOne = ideas.filter(i=>i.priority===1).length;
+  dot.classList.remove('good','bad');
 
-  document.getElementById('ideaCount').textContent = ideas.length;
-  document.getElementById('waitingCount').textContent = waiting;
-  const statCards = document.querySelectorAll('.stat-card strong');
-  if(statCards[2]) statCards[2].textContent = priorityOne;
-
-  document.getElementById('topIdeas').innerHTML = sorted.slice(0,3).map(ideaCard).join('') || '<p style="color:var(--muted)">아직 글감이 없어요.</p>';
-
-  const filter = document.getElementById('categoryFilter')?.value || 'all';
-  const filtered = filter === 'all' ? sorted : sorted.filter(i=>i.category===filter);
-  document.getElementById('allIdeas').innerHTML = filtered.map(ideaCard).join('') || '<p style="color:var(--muted)">해당 카테고리의 글감이 없어요.</p>';
-
-  const pickedList = document.getElementById('draftList');
-  if(pickedList){
-    pickedList.innerHTML = picked.map((p,i)=>`
-      <div class="kanban-item">${esc(p.title)}<small>${esc(p.category || '기타')}</small>
-        <button class="small-btn" style="margin-top:9px" onclick="removePicked(${i})">목록에서 빼기</button>
-      </div>`).join('') || '<small>아직 고른 글이 없어요.</small>';
+  if (state === 'ok') {
+    dot.classList.add('good');
+    text.textContent = 'Google Sheets와 정상 연결됐어요';
+  } else if (state === 'error') {
+    dot.classList.add('bad');
+    text.textContent = 'Google Sheets 연결을 확인해 주세요';
+  } else {
+    text.textContent = 'Google Sheets 연결 확인 중...';
   }
-  const queueList = document.getElementById('queueList');
-  if(queueList) queueList.innerHTML = '<small>다음 단계에서 구글 시트의 초안/발행대기와 연결할 거예요.</small>';
-
-  const draftCount = document.getElementById('draftCount');
-  if(draftCount) draftCount.textContent = picked.length;
-  const queueCount = document.getElementById('queueCount');
-  if(queueCount) queueCount.textContent = 0;
 }
 
-async function loadIdeas(){
-  const refreshBtn = document.getElementById('collectBtn');
-  const oldLabel = refreshBtn?.textContent;
-  if(refreshBtn){ refreshBtn.disabled = true; refreshBtn.textContent = '불러오는 중...'; }
+function setLoading(isLoading) {
+  document.getElementById('homeLoading').classList.toggle('hidden', !isLoading);
+  document.getElementById('ideasLoading').classList.toggle('hidden', !isLoading);
+}
 
-  try{
-    const response = await fetch(API_URL, {method:'GET', cache:'no-store', redirect:'follow'});
-    if(!response.ok) throw new Error(`HTTP ${response.status}`);
+async function loadIdeas() {
+  setLoading(true);
+  setConnectionState('loading');
+
+  try {
+    const response = await fetch(API_URL, { cache: 'no-store', redirect: 'follow' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
     const data = await response.json();
-    if(!Array.isArray(data)) throw new Error('응답 형식 오류');
+    ideas = (Array.isArray(data) ? data : [])
+      .filter(row => Object.values(row).some(v => String(v ?? '').trim()))
+      .map(normalizeIdea);
 
-    ideas = data
-      .filter(row => Object.values(row).some(v=>String(v ?? '').trim() !== ''))
-      .map(normalize)
-      .filter(item => item.title);
-
-    updateCategoryFilter();
-    render();
-    showToast(`시트에서 글감 ${ideas.length}개를 불러왔어요`);
-  }catch(err){
-    console.error('Blog OS API error:', err);
+    renderIdeas();
+    setConnectionState('ok');
+    showToast(`글감 ${ideas.length}개를 불러왔어요`);
+  } catch (error) {
+    console.error(error);
     ideas = [];
-    updateCategoryFilter();
-    render();
+    renderIdeas();
+    setConnectionState('error');
     showToast('시트 연결을 확인해 주세요');
-  }finally{
-    if(refreshBtn){ refreshBtn.disabled = false; refreshBtn.textContent = oldLabel || '오늘 글감 새로고침'; }
+  } finally {
+    setLoading(false);
   }
 }
 
-window.pickIdea = function(encodedTitle){
-  const title = decodeURIComponent(encodedTitle);
-  const item = ideas.find(i=>i.title===title);
-  if(!item) return;
-  if(!picked.some(p=>p.title===item.title)){
-    picked.unshift(item);
-    localStorage.setItem('blogos_picked',JSON.stringify(picked));
-    showToast('고른 글에 담았어요');
-  }else{
-    showToast('이미 담아둔 글이에요');
-  }
-  render();
-};
+document.querySelectorAll('[data-view]').forEach(btn => {
+  btn.addEventListener('click', () => showView(btn.dataset.view));
+});
 
-window.removePicked = function(index){
-  picked.splice(index,1);
-  localStorage.setItem('blogos_picked',JSON.stringify(picked));
-  render();
-  showToast('목록에서 뺐어요');
-};
+document.getElementById('refreshBtn').addEventListener('click', loadIdeas);
+document.getElementById('saveDraftBtn').addEventListener('click', saveDraft);
+document.getElementById('previewBtn').addEventListener('click', () => {
+  renderPreview();
+  showView('preview');
+});
 
-document.querySelectorAll('.nav-item').forEach(btn=>btn.addEventListener('click',()=>switchTab(btn.dataset.tab)));
-document.querySelectorAll('[data-tab-target]').forEach(btn=>btn.addEventListener('click',()=>switchTab(btn.dataset.tabTarget)));
-document.getElementById('categoryFilter')?.addEventListener('change',render);
-document.getElementById('collectBtn')?.addEventListener('click',loadIdeas);
-
-document.getElementById('themeBtn')?.addEventListener('click',()=>{
+document.getElementById('themeBtn').addEventListener('click', () => {
   document.body.classList.toggle('light');
-  localStorage.setItem('blogos_theme',document.body.classList.contains('light')?'light':'dark');
+  localStorage.setItem('blogos_theme', document.body.classList.contains('light') ? 'light' : 'dark');
 });
 
-document.getElementById('saveSettingsBtn')?.addEventListener('click',()=>{
-  localStorage.setItem('blogos_settings',JSON.stringify({
-    dailyGoal:document.getElementById('dailyGoal').value,
-    defaultMode:document.getElementById('defaultMode').value,
-    saveMode:document.getElementById('saveMode').checked
-  }));
-  showToast('설정을 저장했어요');
-});
-
-if(localStorage.getItem('blogos_theme')==='light') document.body.classList.add('light');
-const settings = JSON.parse(localStorage.getItem('blogos_settings') || 'null');
-if(settings){
-  document.getElementById('dailyGoal').value = settings.dailyGoal || 10;
-  document.getElementById('defaultMode').value = settings.defaultMode || 'Standard';
-  document.getElementById('saveMode').checked = settings.saveMode ?? true;
+if (localStorage.getItem('blogos_theme') === 'light') {
+  document.body.classList.add('light');
 }
 
-render();
+renderDraft();
 loadIdeas();
