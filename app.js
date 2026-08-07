@@ -1,22 +1,7 @@
+const API_URL = 'https://script.google.com/macros/s/AKfycbwCOyxrS93IRXDM-bKdmVeo2okUo_CudJx5GD0USHVZfy2JXOeLPEfOXdEMjvQpq89TPg/exec';
 
-const initialIdeas = [
-  {id:1, category:'정부지원', mode:'Premium', score:98, title:'2026 근로장려금 지급일과 확인 방법', reason:'지급 일정 검색이 늘어나는 시기예요.', status:'new'},
-  {id:2, category:'경제', mode:'Premium', score:96, title:'기준금리 발표가 예금·대출에 미치는 영향', reason:'경제 이슈와 생활 금융을 함께 설명하기 좋아요.', status:'new'},
-  {id:3, category:'생활정보', mode:'Standard', score:94, title:'주민등록 사실조사 참여 방법과 주의사항', reason:'정부 안내형 검색 의도가 분명해요.', status:'new'},
-  {id:4, category:'축제', mode:'Template', score:89, title:'이번 주말 가볼 만한 지역축제 일정 모음', reason:'짧은 템플릿 글로 빠르게 작성할 수 있어요.', status:'new'},
-  {id:5, category:'생활정보', mode:'Standard', score:87, title:'화담숲 예약 전 꼭 확인할 운영시간과 주차', reason:'예약 전 확인 수요가 꾸준한 주제예요.', status:'new'},
-];
-
-let ideas = JSON.parse(localStorage.getItem('blogos_ideas') || 'null') || initialIdeas;
-let drafts = JSON.parse(localStorage.getItem('blogos_drafts') || 'null') || [
-  {title:'청년 지원금 신청 조건 정리', mode:'Premium'},
-  {title:'재산세 납부기간 확인법', mode:'Standard'},
-  {title:'여름 야간축제 일정', mode:'Template'}
-];
-let queue = JSON.parse(localStorage.getItem('blogos_queue') || 'null') || [
-  {title:'파킹통장 금리 비교', mode:'Premium'},
-  {title:'주민등록등본 온라인 발급', mode:'Standard'}
-];
+let ideas = [];
+let picked = JSON.parse(localStorage.getItem('blogos_picked') || '[]');
 
 const panels = {
   home: document.getElementById('homePanel'),
@@ -24,12 +9,6 @@ const panels = {
   content: document.getElementById('contentPanel'),
   settings: document.getElementById('settingsPanel')
 };
-
-function save(){
-  localStorage.setItem('blogos_ideas', JSON.stringify(ideas));
-  localStorage.setItem('blogos_drafts', JSON.stringify(drafts));
-  localStorage.setItem('blogos_queue', JSON.stringify(queue));
-}
 
 function showToast(message){
   const toast = document.getElementById('toast');
@@ -46,103 +25,165 @@ function switchTab(name){
   render();
 }
 
+function esc(value){
+  return String(value ?? '')
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'",'&#039;');
+}
+
+function normalize(row,index){
+  const rawPriority = row['우선순위'];
+  const priority = rawPriority === '' || rawPriority == null ? 99 : Number(rawPriority);
+  return {
+    id: `${index}-${row['제목'] || ''}`,
+    category: String(row['카테고리'] || '기타').trim(),
+    title: String(row['제목'] || '').trim(),
+    subtitle: String(row['서브제목'] || '').trim(),
+    point: String(row['포인트'] || '').trim(),
+    status: String(row['상태'] || '대기').trim(),
+    priority: Number.isFinite(priority) ? priority : 99
+  };
+}
+
 function ideaCard(item){
-  const buttonLabel = item.status === 'writing' ? '작성 중' : '이 글 작성';
-  const buttonClass = item.status === 'writing' ? 'small-btn done' : 'small-btn primary';
+  const isPicked = picked.some(p=>p.title===item.title);
   return `
     <article class="idea-card">
       <div class="idea-top">
         <div>
           <div class="tag-row">
-            <span class="tag">${item.category}</span>
-            <span class="tag">${item.mode}</span>
+            <span class="tag">${esc(item.category)}</span>
+            <span class="tag">${esc(item.status)}</span>
           </div>
-          <h4>${item.title}</h4>
+          <h4>${esc(item.title)}</h4>
         </div>
-        <div class="score">${item.score}</div>
+        <div class="score">${item.priority === 99 ? '-' : item.priority}</div>
       </div>
-      <p>${item.reason}</p>
+      ${item.subtitle ? `<p style="margin-bottom:6px;color:var(--text)">${esc(item.subtitle)}</p>` : ''}
+      <p>${item.point ? esc(item.point) : '포인트가 아직 입력되지 않았어요.'}</p>
       <div class="card-actions">
-        <button class="${buttonClass}" onclick="startWriting(${item.id})">${buttonLabel}</button>
-        <button class="small-btn" onclick="holdIdea(${item.id})">보류</button>
+        <button class="${isPicked ? 'small-btn done' : 'small-btn primary'}" onclick="pickIdea('${encodeURIComponent(item.title)}')">
+          ${isPicked ? '고른 글 ✓' : '작성하기'}
+        </button>
       </div>
     </article>`;
 }
 
-function render(){
-  const filter = document.getElementById('categoryFilter')?.value || 'all';
-  const sorted = [...ideas].sort((a,b)=>b.score-a.score);
-  document.getElementById('topIdeas').innerHTML = sorted.slice(0,3).map(ideaCard).join('');
-  const filtered = filter === 'all' ? sorted : sorted.filter(i=>i.category===filter);
-  document.getElementById('allIdeas').innerHTML = filtered.map(ideaCard).join('') || '<p>해당 카테고리의 글감이 없어요.</p>';
-
-  document.getElementById('ideaCount').textContent = ideas.length;
-  document.getElementById('waitingCount').textContent = queue.length;
-  document.getElementById('draftCount').textContent = drafts.length;
-  document.getElementById('queueCount').textContent = queue.length;
-
-  document.getElementById('draftList').innerHTML = drafts.map((d,i)=>`
-    <div class="kanban-item">${d.title}<small>${d.mode}</small>
-      <button class="small-btn" style="margin-top:9px" onclick="moveToQueue(${i})">발행 대기로</button>
-    </div>`).join('') || '<small>작성 전 콘텐츠가 없어요.</small>';
-
-  document.getElementById('queueList').innerHTML = queue.map((d)=>`
-    <div class="kanban-item">${d.title}<small>${d.mode}</small></div>`).join('') || '<small>발행 대기 콘텐츠가 없어요.</small>';
+function updateCategoryFilter(){
+  const select = document.getElementById('categoryFilter');
+  if(!select) return;
+  const current = select.value || 'all';
+  const categories = [...new Set(ideas.map(x=>x.category).filter(Boolean))].sort();
+  select.innerHTML = '<option value="all">전체</option>' + categories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  select.value = categories.includes(current) ? current : 'all';
 }
 
-window.startWriting = function(id){
-  const idea = ideas.find(i=>i.id===id);
-  if(!idea) return;
-  idea.status = 'writing';
-  if(!drafts.some(d=>d.title===idea.title)){
-    drafts.unshift({title:idea.title, mode:idea.mode});
+function render(){
+  const sorted = [...ideas].sort((a,b)=>a.priority-b.priority || a.title.localeCompare(b.title,'ko'));
+  const waiting = ideas.filter(i=>i.status==='대기').length;
+  const priorityOne = ideas.filter(i=>i.priority===1).length;
+
+  document.getElementById('ideaCount').textContent = ideas.length;
+  document.getElementById('waitingCount').textContent = waiting;
+  const statCards = document.querySelectorAll('.stat-card strong');
+  if(statCards[2]) statCards[2].textContent = priorityOne;
+
+  document.getElementById('topIdeas').innerHTML = sorted.slice(0,3).map(ideaCard).join('') || '<p style="color:var(--muted)">아직 글감이 없어요.</p>';
+
+  const filter = document.getElementById('categoryFilter')?.value || 'all';
+  const filtered = filter === 'all' ? sorted : sorted.filter(i=>i.category===filter);
+  document.getElementById('allIdeas').innerHTML = filtered.map(ideaCard).join('') || '<p style="color:var(--muted)">해당 카테고리의 글감이 없어요.</p>';
+
+  const pickedList = document.getElementById('draftList');
+  if(pickedList){
+    pickedList.innerHTML = picked.map((p,i)=>`
+      <div class="kanban-item">${esc(p.title)}<small>${esc(p.category || '기타')}</small>
+        <button class="small-btn" style="margin-top:9px" onclick="removePicked(${i})">목록에서 빼기</button>
+      </div>`).join('') || '<small>아직 고른 글이 없어요.</small>';
   }
-  save(); render(); showToast('콘텐츠 작성 목록에 담았어요');
+  const queueList = document.getElementById('queueList');
+  if(queueList) queueList.innerHTML = '<small>다음 단계에서 구글 시트의 초안/발행대기와 연결할 거예요.</small>';
+
+  const draftCount = document.getElementById('draftCount');
+  if(draftCount) draftCount.textContent = picked.length;
+  const queueCount = document.getElementById('queueCount');
+  if(queueCount) queueCount.textContent = 0;
+}
+
+async function loadIdeas(){
+  const refreshBtn = document.getElementById('collectBtn');
+  const oldLabel = refreshBtn?.textContent;
+  if(refreshBtn){ refreshBtn.disabled = true; refreshBtn.textContent = '불러오는 중...'; }
+
+  try{
+    const response = await fetch(API_URL, {method:'GET', cache:'no-store', redirect:'follow'});
+    if(!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if(!Array.isArray(data)) throw new Error('응답 형식 오류');
+
+    ideas = data
+      .filter(row => Object.values(row).some(v=>String(v ?? '').trim() !== ''))
+      .map(normalize)
+      .filter(item => item.title);
+
+    updateCategoryFilter();
+    render();
+    showToast(`시트에서 글감 ${ideas.length}개를 불러왔어요`);
+  }catch(err){
+    console.error('Blog OS API error:', err);
+    ideas = [];
+    updateCategoryFilter();
+    render();
+    showToast('시트 연결을 확인해 주세요');
+  }finally{
+    if(refreshBtn){ refreshBtn.disabled = false; refreshBtn.textContent = oldLabel || '오늘 글감 새로고침'; }
+  }
+}
+
+window.pickIdea = function(encodedTitle){
+  const title = decodeURIComponent(encodedTitle);
+  const item = ideas.find(i=>i.title===title);
+  if(!item) return;
+  if(!picked.some(p=>p.title===item.title)){
+    picked.unshift(item);
+    localStorage.setItem('blogos_picked',JSON.stringify(picked));
+    showToast('고른 글에 담았어요');
+  }else{
+    showToast('이미 담아둔 글이에요');
+  }
+  render();
 };
 
-window.holdIdea = function(id){
-  ideas = ideas.filter(i=>i.id!==id);
-  save(); render(); showToast('글감을 보류했어요');
-};
-
-window.moveToQueue = function(index){
-  const [item] = drafts.splice(index,1);
-  if(item) queue.unshift(item);
-  save(); render(); showToast('발행 대기로 옮겼어요');
+window.removePicked = function(index){
+  picked.splice(index,1);
+  localStorage.setItem('blogos_picked',JSON.stringify(picked));
+  render();
+  showToast('목록에서 뺐어요');
 };
 
 document.querySelectorAll('.nav-item').forEach(btn=>btn.addEventListener('click',()=>switchTab(btn.dataset.tab)));
 document.querySelectorAll('[data-tab-target]').forEach(btn=>btn.addEventListener('click',()=>switchTab(btn.dataset.tabTarget)));
+document.getElementById('categoryFilter')?.addEventListener('change',render);
+document.getElementById('collectBtn')?.addEventListener('click',loadIdeas);
 
-document.getElementById('categoryFilter').addEventListener('change',render);
-
-document.getElementById('collectBtn').addEventListener('click',()=>{
-  const extra = [
-    {category:'정부지원',mode:'Premium',score:95,title:'소상공인 지원사업 신청 전 확인할 조건',reason:'지원 대상과 신청 방법 검색 의도가 뚜렷해요.'},
-    {category:'경제',mode:'Standard',score:90,title:'이번 주 생활물가 변화, 가계에 미치는 영향',reason:'경제 이슈를 생활 관점으로 풀기 좋아요.'},
-    {category:'생활정보',mode:'Template',score:88,title:'이번 달 놓치기 쉬운 공공요금 납부 일정',reason:'짧은 체크리스트형 글로 만들기 좋아요.'}
-  ].map((x,i)=>({...x,id:Date.now()+i,status:'new'}));
-  ideas = [...extra, ...ideas];
-  save(); render(); showToast('새 글감 3개를 가져왔어요');
-});
-
-document.getElementById('themeBtn').addEventListener('click',()=>{
+document.getElementById('themeBtn')?.addEventListener('click',()=>{
   document.body.classList.toggle('light');
-  localStorage.setItem('blogos_theme', document.body.classList.contains('light') ? 'light' : 'dark');
+  localStorage.setItem('blogos_theme',document.body.classList.contains('light')?'light':'dark');
 });
 
-document.getElementById('saveSettingsBtn').addEventListener('click',()=>{
-  localStorage.setItem('blogos_settings', JSON.stringify({
-    dailyGoal: document.getElementById('dailyGoal').value,
-    defaultMode: document.getElementById('defaultMode').value,
-    saveMode: document.getElementById('saveMode').checked
+document.getElementById('saveSettingsBtn')?.addEventListener('click',()=>{
+  localStorage.setItem('blogos_settings',JSON.stringify({
+    dailyGoal:document.getElementById('dailyGoal').value,
+    defaultMode:document.getElementById('defaultMode').value,
+    saveMode:document.getElementById('saveMode').checked
   }));
   showToast('설정을 저장했어요');
 });
 
-const savedTheme = localStorage.getItem('blogos_theme');
-if(savedTheme === 'light') document.body.classList.add('light');
-
+if(localStorage.getItem('blogos_theme')==='light') document.body.classList.add('light');
 const settings = JSON.parse(localStorage.getItem('blogos_settings') || 'null');
 if(settings){
   document.getElementById('dailyGoal').value = settings.dailyGoal || 10;
@@ -151,3 +192,4 @@ if(settings){
 }
 
 render();
+loadIdeas();
