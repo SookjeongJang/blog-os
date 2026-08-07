@@ -1,30 +1,48 @@
-# Blog OS V3 Simple
+# Blog OS V4 — AI 초안 생성
 
-React 없이 기존 구조 그대로 사용하는 버전입니다.
+이번 버전부터 새 폴더가 딱 하나 생깁니다.
 
-파일은 딱 3개:
 - index.html
 - style.css
 - app.js
+- api/
+  - generate.js
 
-## 이번 버전에서 되는 것
-- Google Sheets 실제 글감 불러오기
-- 카테고리 필터
-- 작성하기 버튼
-- 글 작성 화면
-- 초안 저장
-- HTML 미리보기
-- 저장된 초안에서 계속 작성
-- 모바일 반응형
-- 다크/라이트
+`api` 폴더는 화면용 폴더가 아니라 **Vercel 서버 함수**입니다.
+OpenAI API Key가 브라우저에 보이지 않도록 여기서 대신 AI를 호출합니다.
 
 ## 적용 방법
-기존 GitHub Blog OS 저장소의 아래 3개 파일만 교체하세요.
-- index.html
-- style.css
-- app.js
 
-그 뒤 Commit 하면 Vercel이 자동 재배포합니다.
+기존 GitHub Blog OS 저장소에서:
+1. index.html 교체
+2. style.css 교체
+3. app.js 교체
+4. 새 `api` 폴더 업로드
+5. Commit
 
-Apps Script API:
+## Vercel에서 API 키 등록
+
+Vercel 프로젝트:
+Settings → Environment Variables
+
+Name:
+OPENAI_API_KEY
+
+Value:
+본인의 OpenAI API Key
+
+Production / Preview / Development 중 필요한 환경에 적용하고 저장합니다.
+그 뒤 새 배포가 필요합니다.
+
+선택사항:
+OPENAI_MODEL = gpt-5-mini
+
+모델 값을 따로 등록하지 않으면 자동으로 gpt-5-mini를 사용합니다.
+
+## 중요
+
+API 키를 app.js에 붙여넣지 마세요.
+브라우저에 노출될 수 있습니다.
+
+Google Sheets API:
 https://script.google.com/macros/s/AKfycbwCOyxrS93IRXDM-bKdmVeo2okUo_CudJx5GD0USHVZfy2JXOeLPEfOXdEMjvQpq89TPg/exec
