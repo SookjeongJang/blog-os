@@ -199,8 +199,12 @@ source_url에는
 
         body: JSON.stringify({
           model:
-            process.env.OPENAI_SEARCH_MODEL ||
-            "gpt-5-mini",
+          process.env.OPENAI_SEARCH_MODEL ||
+          "gpt-5.6-luna",
+
+        reasoning: {
+        effort: "none"
+        },
 
           tools: [
             {
@@ -227,7 +231,7 @@ source_url에는
             }
           },
 
-          max_output_tokens: 3500
+          max_output_tokens: 8000
         })
       }
     );
