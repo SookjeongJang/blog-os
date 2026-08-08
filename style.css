@@ -81,3 +81,18 @@ body.light .bottom-nav{background:rgba(255,255,255,.9)}
   .stats-grid{grid-template-columns:repeat(3,1fr);gap:8px}.stat-card{padding:14px 10px}.stat-card strong{font-size:23px}
   .panel{padding:18px 14px}.ai-box{align-items:stretch;flex-direction:column}.ai-box .primary-btn{width:100%}
 }
+
+
+/* V5 - 최신 글감 찾기 */
+.finder-intro{margin-bottom:16px;padding:17px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.035)}
+.finder-intro p{margin:0 0 7px;line-height:1.6}.finder-intro p:last-child{margin-bottom:0}.finder-note{color:var(--muted);font-size:13px}
+.finder-controls{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-bottom:14px}
+.finder-controls label{display:grid;gap:7px;color:var(--muted);font-size:12px}
+.finder-controls select{min-width:110px;border:1px solid var(--line);background:var(--card-strong);color:var(--text);border-radius:12px;padding:10px 12px}
+.topic-list{display:grid;gap:13px}.topic-card{padding:18px;border:1px solid var(--line);border-radius:19px;background:rgba(255,255,255,.045)}
+.topic-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.topic-card h4{margin:5px 0 9px;font-size:17px;line-height:1.45}
+.topic-reason{margin-bottom:10px!important}.topic-source{color:var(--muted);font-size:12px;line-height:1.6;margin-bottom:13px}.source-link{color:var(--accent-2);text-decoration:none;font-weight:700}
+.topic-score{min-width:44px;height:44px;display:grid;place-items:center;border-radius:14px;color:var(--accent-2);background:rgba(122,216,255,.11);font-weight:800}
+.grade-badge{padding:5px 9px;border-radius:999px;font-size:11px;font-weight:900}.grade-S{background:rgba(255,112,137,.16);color:#ff91a5}.grade-A{background:rgba(255,190,95,.15);color:#ffd08a}.grade-B{background:rgba(114,230,177,.13);color:var(--good)}
+.topic-actions{display:flex;gap:8px}
+@media(max-width:560px){.finder-controls{align-items:stretch;flex-direction:column}.finder-controls label,.finder-controls select,.finder-controls .primary-btn{width:100%}}

@@ -3,9 +3,11 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwCOyxrS93IRXDM-bKdmVeo
 let ideas = [];
 let activeCategory = '전체';
 let draft = JSON.parse(localStorage.getItem('blogos_draft') || 'null');
+let liveTopics = JSON.parse(localStorage.getItem('blogos_live_topics') || '[]');
 
 const panels = {
   home: document.getElementById('homePanel'),
+  finder: document.getElementById('finderPanel'),
   ideas: document.getElementById('ideasPanel'),
   writer: document.getElementById('writerPanel'),
   preview: document.getElementById('previewPanel'),
@@ -206,6 +208,104 @@ async function generateAiDraft() {
   }
 }
 
+
+function setTopicLoading(on) {
+  const btn = document.getElementById('runTopicSearchBtn');
+  btn.disabled = on;
+  btn.textContent = on ? '찾는 중...' : '오늘 글감 찾기';
+  document.getElementById('topicProgress').classList.toggle('hidden', !on);
+}
+
+function showTopicError(message) {
+  const box = document.getElementById('topicError');
+  box.textContent = message;
+  box.classList.remove('hidden');
+}
+
+function hideTopicError() {
+  document.getElementById('topicError').classList.add('hidden');
+}
+
+function renderLiveTopics() {
+  const list = document.getElementById('liveTopics');
+  const empty = document.getElementById('topicEmpty');
+
+  if (!Array.isArray(liveTopics) || !liveTopics.length) {
+    list.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+
+  empty.classList.add('hidden');
+  list.innerHTML = liveTopics.map((t, index) => {
+    const grade = String(t.grade || 'B').toUpperCase();
+    const sourceLink = t.source_url
+      ? `<a class="source-link" href="${escapeHtml(t.source_url)}" target="_blank" rel="noopener noreferrer">출처 확인 ↗</a>`
+      : '';
+
+    return `
+      <article class="topic-card">
+        <div class="topic-card-head">
+          <div class="tag-row">
+            <span class="grade-badge grade-${escapeHtml(grade)}">${escapeHtml(grade)}급</span>
+            <span class="tag">${escapeHtml(t.category || '생활정보')}</span>
+            ${t.freshness ? `<span class="tag">${escapeHtml(t.freshness)}</span>` : ''}
+          </div>
+          <div class="topic-score">${escapeHtml(t.score || '-')}</div>
+        </div>
+        <h4>${escapeHtml(t.title || '제목 없음')}</h4>
+        <p class="topic-reason">${escapeHtml(t.reason || '')}</p>
+        <div class="topic-source">${t.source_name ? `출처: ${escapeHtml(t.source_name)} ` : ''}${sourceLink}</div>
+        <div class="topic-actions">
+          <button class="small-btn primary" onclick="writeLiveTopic(${index})">이 주제로 초안 만들기</button>
+        </div>
+      </article>`;
+  }).join('');
+}
+
+window.writeLiveTopic = function(index) {
+  const t = liveTopics[index];
+  if (!t) return;
+  document.getElementById('writerCategory').value = t.category || '';
+  document.getElementById('writerTitle').value = t.title || '';
+  document.getElementById('writerPoint').value = [
+    t.reason || '',
+    t.key_points || '',
+    t.source_name ? `참고 출처: ${t.source_name}` : '',
+    t.source_url || ''
+  ].filter(Boolean).join('\n');
+  document.getElementById('writerHtml').value = '';
+  hideAiError();
+  showView('writer');
+};
+
+async function findLiveTopics() {
+  hideTopicError();
+  setTopicLoading(true);
+  const count = Number(document.getElementById('topicCount').value) || 8;
+
+  try {
+    const response = await fetch('/api/topics', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ count })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || `글감 검색 실패 (${response.status})`);
+    if (!Array.isArray(data.topics)) throw new Error('글감 응답 형식이 올바르지 않아요.');
+
+    liveTopics = data.topics;
+    localStorage.setItem('blogos_live_topics', JSON.stringify(liveTopics));
+    renderLiveTopics();
+    showToast(`최신 글감 ${liveTopics.length}개를 찾았어요 🔥`);
+  } catch (error) {
+    console.error(error);
+    showTopicError(error.message || '최신 글감 검색 중 오류가 발생했어요.');
+  } finally {
+    setTopicLoading(false);
+  }
+}
+
 async function loadIdeas() {
   document.getElementById('homeLoading').classList.remove('hidden');
   document.getElementById('ideasLoading').classList.remove('hidden');
@@ -235,6 +335,8 @@ async function loadIdeas() {
 }
 
 document.querySelectorAll('[data-view]').forEach(btn=>btn.addEventListener('click',()=>showView(btn.dataset.view)));
+document.getElementById('findTopicsBtn').addEventListener('click',()=>showView('finder'));
+document.getElementById('runTopicSearchBtn').addEventListener('click',findLiveTopics);
 document.getElementById('refreshBtn').addEventListener('click',loadIdeas);
 document.getElementById('generateAiBtn').addEventListener('click',generateAiDraft);
 document.getElementById('saveDraftBtn').addEventListener('click',saveDraft);
@@ -248,4 +350,5 @@ document.getElementById('themeBtn').addEventListener('click',()=>{
 if(localStorage.getItem('blogos_theme')==='light') document.body.classList.add('light');
 
 renderDraft();
+renderLiveTopics();
 loadIdeas();
