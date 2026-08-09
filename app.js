@@ -241,6 +241,19 @@ function renderLiveTopics() {
     const grade = String(t.grade || 'B').toUpperCase();
     const sourceLink = t.source_url
       ? `<a class="source-link" href="${escapeHtml(t.source_url)}" target="_blank" rel="noopener noreferrer">출처 확인 ↗</a>`
+      
+      const verification =
+        t.verification_status === 'verified'
+          ? `<div class="verification-badge verified">
+               ✓ 공식 출처 확인됨
+               <small>${escapeHtml(t.verification_note || '')}</small>
+             </div>`
+          : t.verification_status === 'current_check'
+          ? `<div class="verification-badge current-check">
+               ⚠ 현재 상태 확인 필요
+               <small>${escapeHtml(t.verification_note || '')}</small>
+             </div>`
+          : '';
       : '';
 
     return `
@@ -255,7 +268,7 @@ function renderLiveTopics() {
         </div>
         <h4>${escapeHtml(t.title || '제목 없음')}</h4>
         <p class="topic-reason">${escapeHtml(t.reason || '')}</p>
-        <div class="topic-source">${t.source_name ? `출처: ${escapeHtml(t.source_name)} ` : ''}${sourceLink}</div>
+        <div class="topic-source">${t.source_name ? `출처: ${escapeHtml(t.source_name)} ` : ''}${sourceLink}${verification}</div>
         <div class="topic-actions">
           <button class="small-btn primary" onclick="writeLiveTopic(${index})">이 주제로 초안 만들기</button>
         </div>
