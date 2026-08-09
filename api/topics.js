@@ -149,7 +149,32 @@ source_url에는
 - 과거 자료를 최신 자료로 오해하지 않았는가?
 - source_url이 실제 이 주장의 근거인가?
 
-하나라도 확실하지 않으면 해당 주제를 출력하지 말고 다른 주제로 교체한다.`;
+하나라도 확실하지 않으면 해당 주제를 출력하지 말고 다른 주제로 교체한다.
+
+[검증 상태 판정 규칙]
+
+각 주제마다 verification_status를 반드시 판단한다.
+
+verification_status 값은 아래 셋 중 하나만 사용한다.
+
+"verified"
+= 공식 출처에서 현재 기준 사실, 날짜, 금액, 대상, 시행 여부까지 직접 확인됨
+
+"current_check"
+= 공식 출처에서 제도나 발표 자체는 확인되지만
+  현재 모집 중인지, 현재 신청 가능한지, 현재 남은 수량/선착순 여부 등
+  "지금 이 순간의 상태"는 별도 확인이 필요함
+
+"exclude"
+= 출처가 불충분하거나 날짜/수치/현재 상태가 확실하지 않음
+
+verification_note에는
+왜 그렇게 판정했는지 짧게 설명한다.
+
+중요:
+verification_status가 "exclude"인 주제는 최종 결과에 포함하지 말고
+다른 주제로 교체한다.
+`;
 
   const schema = {
     type: "object",
@@ -168,16 +193,18 @@ source_url에는
           additionalProperties: false,
 
           required: [
-            "grade",
-            "score",
-            "category",
-            "title",
-            "reason",
-            "key_points",
-            "freshness",
-            "source_name",
-            "source_url"
-          ],
+              "grade",
+              "score",
+              "category",
+              "title",
+              "reason",
+              "key_points",
+              "freshness",
+              "source_name",
+              "source_url",
+              "verification_status",
+              "verification_note"
+            ],
 
           properties: {
             grade: {
@@ -222,6 +249,14 @@ source_url에는
             },
 
             source_url: {
+              type: "string"
+            },
+            verification_status: {
+              type: "string",
+              enum: ["verified", "current_check", "exclude"]
+            },
+            
+            verification_note: {
               type: "string"
             }
           }
