@@ -40,7 +40,7 @@ export default async function handler(req, res) {
     });
   }
 
-  const requestedCount = Number(req.body?.count || 8);
+  const requestedCount = Number(req.body?.count || 3);
   const count = Math.max(3, Math.min(10, requestedCount));
 
   const today = new Date().toLocaleDateString("ko-KR", {
