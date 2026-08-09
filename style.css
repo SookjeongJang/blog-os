@@ -96,3 +96,36 @@ body.light .bottom-nav{background:rgba(255,255,255,.9)}
 .grade-badge{padding:5px 9px;border-radius:999px;font-size:11px;font-weight:900}.grade-S{background:rgba(255,112,137,.16);color:#ff91a5}.grade-A{background:rgba(255,190,95,.15);color:#ffd08a}.grade-B{background:rgba(114,230,177,.13);color:var(--good)}
 .topic-actions{display:flex;gap:8px}
 @media(max-width:560px){.finder-controls{align-items:stretch;flex-direction:column}.finder-controls label,.finder-controls select,.finder-controls .primary-btn{width:100%}}
+
+/* 정확도 V2 - 검증 배지 */
+
+.verification-badge {
+  margin-top: 12px;
+  padding: 11px 13px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  border: 1px solid var(--line);
+}
+
+.verification-badge small {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* 공식 출처 확인 완료 */
+.verification-badge.verified {
+  background: rgba(114, 230, 177, 0.10);
+  border-color: rgba(114, 230, 177, 0.28);
+  color: var(--good);
+}
+
+/* 현재 상태 추가 확인 필요 */
+.verification-badge.current-check {
+  background: rgba(255, 194, 92, 0.10);
+  border-color: rgba(255, 194, 92, 0.28);
+  color: #ffd27f;
+}
