@@ -385,3 +385,44 @@ if(localStorage.getItem('blogos_theme')==='light') document.body.classList.add('
 renderDraft();
 renderLiveTopics();
 loadIdeas();
+
+document.getElementById('copyTitleBtn')?.addEventListener('click', async () => {
+  const title = document.getElementById('writerTitle')?.value || '';
+
+  if (!title.trim()) {
+    alert('복사할 제목이 없어요.');
+    return;
+  }
+
+  await navigator.clipboard.writeText(title);
+
+  const btn = document.getElementById('copyTitleBtn');
+  const original = btn.textContent;
+
+  btn.textContent = '✓ 제목 복사됨';
+
+  setTimeout(() => {
+    btn.textContent = original;
+  }, 1500);
+});
+
+
+document.getElementById('copyHtmlBtn')?.addEventListener('click', async () => {
+  const html = document.getElementById('writerHtml')?.value || '';
+
+  if (!html.trim()) {
+    alert('복사할 글이 없어요.');
+    return;
+  }
+
+  await navigator.clipboard.writeText(html);
+
+  const btn = document.getElementById('copyHtmlBtn');
+  const original = btn.textContent;
+
+  btn.textContent = '✓ HTML 복사됨';
+
+  setTimeout(() => {
+    btn.textContent = original;
+  }, 1500);
+});
