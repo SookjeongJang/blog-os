@@ -434,7 +434,7 @@ source_url이 제공됐다면
         method: "POST",
 
         headers: {
-          Authorization: \`Bearer \${apiKey}\`,
+          Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json"
         },
 
