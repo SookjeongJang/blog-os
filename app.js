@@ -182,11 +182,17 @@ async function generateAiDraft() {
   setAiLoading(true);
 
   try {
-    const response=await fetch('/api/generate', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({category,title,point})
-    });
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category,
+          title,
+          point,
+          source_url: window.currentSourceUrl || '',
+          source_name: window.currentSourceName || ''
+        })
+      });
 
     const data=await response.json().catch(()=>({}));
 
@@ -299,6 +305,10 @@ function renderLiveTopics() {
 window.writeLiveTopic = function(index) {
   const t = liveTopics[index];
   if (!t) return;
+
+  window.currentSourceUrl = t.source_url || '';
+  window.currentSourceName = t.source_name || '';
+  
   document.getElementById('writerCategory').value = t.category || '';
   document.getElementById('writerTitle').value = t.title || '';
   document.getElementById('writerPoint').value = [
@@ -308,6 +318,7 @@ window.writeLiveTopic = function(index) {
     t.source_url || ''
   ].filter(Boolean).join('\n');
   document.getElementById('writerHtml').value = '';
+
   hideAiError();
   showView('writer');
 };
