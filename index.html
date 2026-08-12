@@ -185,18 +185,44 @@
           <button class="ghost-btn" id="saveDraftBtn">초안 저장</button>
           <button class="primary-btn" id="previewBtn">미리보기</button>
           <button class="ghost-btn" id="checkPublishBtn">✓ 발행 준비도 검사</button>
+          <button class="ghost-btn" id="verifyFactsBtn">🔍 사실 검증</button>
         </div>
         <div id="publishCheckBox" class="publish-check hidden">
-  <div class="publish-score-row">
+          <div class="publish-score-row">
+            <div>
+              <span class="publish-label">발행 준비도</span>
+              <strong id="publishScore">0점</strong>
+            </div>
+
+            <span id="publishStatus" class="publish-status">검사 전</span>
+          </div>
+
+          <div id="publishChecks" class="publish-check-list"></div>
+      </div>
+
+        <div id="factCheckBox" class="fact-check hidden">
+  <div class="fact-check-head">
     <div>
-      <span class="publish-label">발행 준비도</span>
-      <strong id="publishScore">0점</strong>
+      <span class="fact-check-label">사실 검증</span>
+      <strong id="factCheckStatus">검사 전</strong>
     </div>
 
-    <span id="publishStatus" class="publish-status">검사 전</span>
+    <span id="factCheckSummary" class="fact-check-summary">
+      아직 검증하지 않았어요.
+    </span>
   </div>
 
-  <div id="publishChecks" class="publish-check-list"></div>
+  <div id="factCheckLoading" class="progress-box hidden">
+    <div class="loader"></div>
+    <div>
+      <b>공식 출처와 대조하고 있어요...</b>
+      <p>날짜, 금액, 대상, 신청기간 등을 확인합니다.</p>
+    </div>
+  </div>
+
+  <div id="factCheckError" class="error-box hidden"></div>
+
+  <div id="factCheckResults" class="fact-check-list"></div>
 </div>
       </div>
     </section>
