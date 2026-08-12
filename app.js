@@ -325,7 +325,7 @@ window.writeLiveTopic = function(index) {
 async function findLiveTopics() {
   hideTopicError();
   setTopicLoading(true);
-  const count = Number(document.getElementById('topicCount').value) || 8;
+  const count = Number(document.getElementById('topicCount').value) || 3;
 
   try {
     const response = await fetch('/api/topics', {
@@ -442,23 +442,6 @@ document.getElementById('copyHtmlBtn')?.addEventListener('click', async () => {
   const original = btn.textContent;
 
   btn.textContent = '✓ 발행용 HTML 복사됨';
-
-  setTimeout(() => {
-    btn.textContent = original;
-  }, 1500);
-});
-
-  if (!html.trim()) {
-    alert('복사할 글이 없어요.');
-    return;
-  }
-
-  await navigator.clipboard.writeText(html);
-
-  const btn = document.getElementById('copyHtmlBtn');
-  const original = btn.textContent;
-
-  btn.textContent = '✓ HTML 복사됨';
 
   setTimeout(() => {
     btn.textContent = original;
