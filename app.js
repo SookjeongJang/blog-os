@@ -447,3 +447,258 @@ document.getElementById('copyHtmlBtn')?.addEventListener('click', async () => {
     btn.textContent = original;
   }, 1500);
 });
+
+function stripHtml(html) {
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+  return temp.textContent || temp.innerText || '';
+}
+
+function runPublishCheck() {
+  const title =
+    document.getElementById('writerTitle')?.value.trim() || '';
+
+  const html =
+    document.getElementById('writerHtml')?.value || '';
+
+  if (!html.trim()) {
+    alert('먼저 AI 초안을 만들어 주세요.');
+    return;
+  }
+
+  const text = stripHtml(html).replace(/\s+/g, ' ').trim();
+
+  const checks = [];
+
+  function addCheck(label, passed, points, note = '') {
+    checks.push({
+      label,
+      passed,
+      points: passed ? points : 0,
+      max: points,
+      note
+    });
+  }
+
+
+  /* 1. 제목 */
+  const titleGood =
+    title.length >= 15 &&
+    title.length <= 60;
+
+  addCheck(
+    '제목 길이',
+    titleGood,
+    10,
+    titleGood
+      ? '검색 결과에서 읽기 좋은 길이예요.'
+      : '제목은 약 15~60자 정도가 좋아요.'
+  );
+
+
+  /* 2. 공식 출처 */
+  const hasOfficialSource =
+    html.includes('official-source') ||
+    Boolean(window.currentSourceUrl);
+
+  addCheck(
+    '공식 출처',
+    hasOfficialSource,
+    15,
+    hasOfficialSource
+      ? '공식 출처가 연결되어 있어요.'
+      : '공식 출처를 한 번 더 확인해 주세요.'
+  );
+
+
+  /* 3. 공식 행동 버튼 */
+  const hasOfficialAction =
+    html.includes('official-action');
+
+  addCheck(
+    '신청·예약·조회 버튼',
+    hasOfficialAction || !window.currentSourceUrl,
+    10,
+    hasOfficialAction
+      ? '공식 행동 버튼이 있어요.'
+      : window.currentSourceUrl
+      ? '공식 URL은 있지만 행동 버튼이 없어요.'
+      : '이 글은 행동 버튼이 꼭 필요한 주제는 아닐 수 있어요.'
+  );
+
+
+  /* 4. 핵심 요약 */
+  const hasSummary =
+    html.includes('summary-box');
+
+  addCheck(
+    '핵심 요약',
+    hasSummary,
+    10,
+    hasSummary
+      ? '핵심 내용이 앞부분에 정리되어 있어요.'
+      : '짧은 핵심 요약 박스가 있으면 읽기 쉬워져요.'
+  );
+
+
+  /* 5. 소제목 */
+  const h2Count =
+    (html.match(/<h2\b/gi) || []).length;
+
+  addCheck(
+    '소제목 구조',
+    h2Count >= 2,
+    10,
+    h2Count >= 2
+      ? `h2 소제목이 ${h2Count}개 있어요.`
+      : 'h2 소제목을 2개 이상 사용해 주세요.'
+  );
+
+
+  /* 6. 글 길이 */
+  const textLength = text.length;
+
+  const lengthGood =
+    textLength >= 600 &&
+    textLength <= 1800;
+
+  addCheck(
+    '글 길이',
+    lengthGood,
+    10,
+    lengthGood
+      ? `약 ${textLength}자예요. 짧게 읽기 좋은 편이에요.`
+      : textLength < 600
+      ? `약 ${textLength}자예요. 핵심 설명이 너무 짧을 수 있어요.`
+      : `약 ${textLength}자예요. 시리즈로 나눌 수 있는지 확인해 보세요.`
+  );
+
+
+  /* 7. FAQ */
+  const hasFaq =
+    /FAQ|자주 묻는 질문/i.test(html);
+
+  addCheck(
+    'FAQ',
+    hasFaq,
+    10,
+    hasFaq
+      ? '짧은 FAQ가 포함되어 있어요.'
+      : 'FAQ 2~3개를 넣으면 검색 질문을 더 잘 받을 수 있어요.'
+  );
+
+
+  /* 8. 애드센스 자리 */
+  const adCount =
+    [
+      'ADSENSE_TOP',
+      'ADSENSE_MIDDLE',
+      'ADSENSE_BOTTOM'
+    ].filter(name => html.includes(name)).length;
+
+  addCheck(
+    '애드센스 자리',
+    adCount >= 2,
+    10,
+    adCount >= 2
+      ? `광고 자리표시자 ${adCount}개가 있어요.`
+      : '광고 위치가 충분히 표시되어 있는지 확인해 주세요.'
+  );
+
+
+  /* 9. 미연결 내부링크 */
+  const internalLinks =
+    (html.match(/INTERNAL_LINK_/g) || []).length;
+
+  addCheck(
+    '내부 연결글',
+    internalLinks === 0,
+    5,
+    internalLinks === 0
+      ? '미연결 링크가 없어요.'
+      : `연결 전 관련글 ${internalLinks}개가 있어요. HTML 복사할 때 자동 제거됩니다.`
+  );
+
+
+  /* 10. 긴 URL 노출 */
+  const visibleUrl =
+    /https?:\/\/[^\s<]{20,}/i.test(text);
+
+  addCheck(
+    '본문 URL 노출',
+    !visibleUrl,
+    10,
+    !visibleUrl
+      ? '긴 URL이 본문에 그대로 노출되지 않아요.'
+      : '본문에 긴 URL 문자열이 보여요. 버튼으로 바꾸는 게 좋아요.'
+  );
+
+
+  const score =
+    checks.reduce(
+      (sum, item) => sum + item.points,
+      0
+    );
+
+  const scoreEl =
+    document.getElementById('publishScore');
+
+  const statusEl =
+    document.getElementById('publishStatus');
+
+  const listEl =
+    document.getElementById('publishChecks');
+
+  const box =
+    document.getElementById('publishCheckBox');
+
+
+  scoreEl.textContent = `${score}점`;
+
+  let status = '';
+
+  if (score >= 90) {
+    status = '발행 준비 완료 ✓';
+  } else if (score >= 75) {
+    status = '거의 준비됐어요';
+  } else if (score >= 60) {
+    status = '조금 더 확인해요';
+  } else {
+    status = '수정이 필요해요';
+  }
+
+  statusEl.textContent = status;
+
+
+  listEl.innerHTML = checks.map(item => `
+    <div class="publish-check-item ${item.passed ? 'passed' : 'warning'}">
+
+      <div class="publish-check-icon">
+        ${item.passed ? '✓' : '!'}
+      </div>
+
+      <div class="publish-check-text">
+        <strong>${item.label}</strong>
+        <small>${item.note}</small>
+      </div>
+
+      <span class="publish-check-point">
+        ${item.points}/${item.max}
+      </span>
+
+    </div>
+  `).join('');
+
+
+  box.classList.remove('hidden');
+
+  showToast(`발행 준비도 ${score}점`);
+}
+
+
+document
+  .getElementById('checkPublishBtn')
+  ?.addEventListener(
+    'click',
+    runPublishCheck
+  );
