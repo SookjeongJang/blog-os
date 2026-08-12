@@ -702,3 +702,188 @@ document
     'click',
     runPublishCheck
   );
+
+function setFactCheckLoading(on) {
+  const btn = document.getElementById('verifyFactsBtn');
+  const loading = document.getElementById('factCheckLoading');
+
+  if (btn) {
+    btn.disabled = on;
+    btn.textContent = on ? '검증 중...' : '🔍 사실 검증';
+  }
+
+  if (loading) {
+    loading.classList.toggle('hidden', !on);
+  }
+}
+
+function showFactCheckError(message) {
+  const box = document.getElementById('factCheckError');
+
+  if (!box) return;
+
+  box.textContent = message;
+  box.classList.remove('hidden');
+}
+
+function hideFactCheckError() {
+  document
+    .getElementById('factCheckError')
+    ?.classList.add('hidden');
+}
+
+function renderFactCheck(result) {
+  const box = document.getElementById('factCheckBox');
+  const statusEl = document.getElementById('factCheckStatus');
+  const summaryEl = document.getElementById('factCheckSummary');
+  const resultsEl = document.getElementById('factCheckResults');
+
+  if (!box || !statusEl || !summaryEl || !resultsEl) return;
+
+  let statusText = '';
+
+  if (result.overall_status === 'verified') {
+    statusText = '검증 완료 ✓';
+  } else if (result.overall_status === 'review') {
+    statusText = '확인 필요 ⚠';
+  } else {
+    statusText = '수정 필요 !';
+  }
+
+  statusEl.textContent = statusText;
+
+  summaryEl.textContent =
+    `확인 ${result.verified_count || 0}개 · ` +
+    `확인 필요 ${result.needs_check_count || 0}개 · ` +
+    `오류 ${result.incorrect_count || 0}개`;
+
+  const checks = Array.isArray(result.checks)
+    ? result.checks
+    : [];
+
+  resultsEl.innerHTML = checks.map(item => {
+    let icon = '';
+    let label = '';
+    let className = '';
+
+    if (item.status === 'verified') {
+      icon = '✓';
+      label = '확인됨';
+      className = 'verified';
+    } else if (item.status === 'needs_check') {
+      icon = '⚠';
+      label = '확인 필요';
+      className = 'needs-check';
+    } else {
+      icon = '!';
+      label = '틀림';
+      className = 'incorrect';
+    }
+
+    const sourceLink = item.source_url
+      ? `<a href="${escapeHtml(item.source_url)}" target="_blank" rel="noopener noreferrer">
+           ${escapeHtml(item.source_name || '공식 출처')} ↗
+         </a>`
+      : '';
+
+    return `
+      <div class="fact-check-item ${className}">
+        <div class="fact-check-icon">${icon}</div>
+
+        <div class="fact-check-content">
+          <div class="fact-check-title">
+            <strong>${escapeHtml(item.claim || '')}</strong>
+            <span>${label}</span>
+          </div>
+
+          <p>${escapeHtml(item.evidence || '')}</p>
+
+          ${sourceLink
+            ? `<div class="fact-check-source">${sourceLink}</div>`
+            : ''
+          }
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  if (!checks.length) {
+    resultsEl.innerHTML =
+      '<div class="empty-card">검증할 구체적인 사실이 없어요.</div>';
+  }
+
+  box.classList.remove('hidden');
+}
+
+async function verifyFacts() {
+  hideFactCheckError();
+
+  const title =
+    document.getElementById('writerTitle')?.value.trim() || '';
+
+  const html =
+    document.getElementById('writerHtml')?.value || '';
+
+  if (!title) {
+    alert('제목이 없어요.');
+    return;
+  }
+
+  if (!html.trim()) {
+    alert('먼저 AI 초안을 만들어 주세요.');
+    return;
+  }
+
+  const box = document.getElementById('factCheckBox');
+  box?.classList.remove('hidden');
+
+  setFactCheckLoading(true);
+
+  try {
+    const response = await fetch('/api/verify', {
+      method: 'POST',
+
+      headers: {
+        'Content-Type': 'application/json'
+      },
+
+      body: JSON.stringify({
+        title,
+        html,
+        source_url: window.currentSourceUrl || '',
+        source_name: window.currentSourceName || ''
+      })
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+        `사실 검증 실패 (${response.status})`
+      );
+    }
+
+    renderFactCheck(data);
+
+    showToast('사실 검증이 끝났어요 🔍');
+
+  } catch (error) {
+    console.error(error);
+
+    showFactCheckError(
+      error.message ||
+      '사실 검증 중 오류가 발생했어요.'
+    );
+
+  } finally {
+    setFactCheckLoading(false);
+  }
+}
+
+document
+  .getElementById('verifyFactsBtn')
+  ?.addEventListener(
+    'click',
+    verifyFacts
+  );
