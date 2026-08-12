@@ -315,7 +315,6 @@ window.writeLiveTopic = function(index) {
     t.reason || '',
     t.key_points || '',
     t.source_name ? `참고 출처: ${t.source_name}` : '',
-    t.source_url || ''
   ].filter(Boolean).join('\n');
   document.getElementById('writerHtml').value = '';
 
