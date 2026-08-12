@@ -740,77 +740,120 @@ function renderFactCheck(result) {
 
   if (!box || !statusEl || !summaryEl || !resultsEl) return;
 
-  let statusText = '';
-
-  if (result.overall_status === 'verified') {
-    statusText = '검증 완료 ✓';
-  } else if (result.overall_status === 'review') {
-    statusText = '확인 필요 ⚠';
-  } else {
-    statusText = '수정 필요 !';
-  }
-
-  statusEl.textContent = statusText;
-
-  summaryEl.textContent =
-    `확인 ${result.verified_count || 0}개 · ` +
-    `확인 필요 ${result.needs_check_count || 0}개 · ` +
-    `오류 ${result.incorrect_count || 0}개`;
-
   const checks = Array.isArray(result.checks)
     ? result.checks
     : [];
 
-  resultsEl.innerHTML = checks.map(item => {
-    let icon = '';
-    let label = '';
-    let className = '';
+  const problems = checks.filter(
+    item =>
+      item.status === 'needs_check' ||
+      item.status === 'incorrect'
+  );
 
-    if (item.status === 'verified') {
-      icon = '✓';
-      label = '확인됨';
-      className = 'verified';
-    } else if (item.status === 'needs_check') {
-      icon = '⚠';
-      label = '확인 필요';
-      className = 'needs-check';
-    } else {
-      icon = '!';
-      label = '틀림';
-      className = 'incorrect';
-    }
+  const verified = checks.filter(
+    item => item.status === 'verified'
+  );
 
-    const sourceLink = item.source_url
-      ? `<a href="${escapeHtml(item.source_url)}" target="_blank" rel="noopener noreferrer">
-           ${escapeHtml(item.source_name || '공식 출처')} ↗
-         </a>`
-      : '';
+  /* 전체 판정 */
+  if (result.overall_status === 'verified') {
+    statusEl.textContent = '✓ 발행 가능';
+  } else if (result.overall_status === 'review') {
+    statusEl.textContent = '⚠ 확인 후 발행';
+  } else {
+    statusEl.textContent = '! 수정 후 발행';
+  }
 
-    return `
-      <div class="fact-check-item ${className}">
-        <div class="fact-check-icon">${icon}</div>
+  summaryEl.textContent =
+    `확인 ${result.verified_count || 0} · ` +
+    `확인 필요 ${result.needs_check_count || 0} · ` +
+    `오류 ${result.incorrect_count || 0}`;
 
-        <div class="fact-check-content">
-          <div class="fact-check-title">
-            <strong>${escapeHtml(item.claim || '')}</strong>
-            <span>${label}</span>
+  let html = '';
+
+  /* 문제가 있을 때만 먼저 표시 */
+  if (problems.length) {
+    html += `
+      <div class="fact-problem-box">
+        <strong>먼저 확인할 것</strong>
+    `;
+
+    problems.forEach(item => {
+      const isWrong = item.status === 'incorrect';
+
+      html += `
+        <div class="fact-problem-item">
+          <span>${isWrong ? '❌' : '⚠️'}</span>
+
+          <div>
+            <b>${escapeHtml(item.claim || '')}</b>
+            <p>${escapeHtml(item.evidence || '')}</p>
+
+            ${
+              item.source_url
+                ? `<a href="${escapeHtml(item.source_url)}"
+                      target="_blank"
+                      rel="noopener noreferrer">
+                     ${escapeHtml(item.source_name || '공식 출처')} ↗
+                   </a>`
+                : ''
+            }
           </div>
-
-          <p>${escapeHtml(item.evidence || '')}</p>
-
-          ${sourceLink
-            ? `<div class="fact-check-source">${sourceLink}</div>`
-            : ''
-          }
         </div>
+      `;
+    });
+
+    html += `</div>`;
+  } else {
+    html += `
+      <div class="fact-all-good">
+        <strong>🟢 공식 자료와 대조 완료</strong>
+        <p>
+          핵심 사실 ${verified.length}개를 확인했고
+          현재 발견된 오류가 없어요.
+        </p>
       </div>
     `;
-  }).join('');
-
-  if (!checks.length) {
-    resultsEl.innerHTML =
-      '<div class="empty-card">검증할 구체적인 사실이 없어요.</div>';
   }
+
+  /* 정상 결과는 접어두기 */
+  if (verified.length) {
+    html += `
+      <details class="fact-details">
+        <summary>
+          검증 상세보기 (${verified.length}개) ↓
+        </summary>
+
+        <div class="fact-details-list">
+    `;
+
+    verified.forEach(item => {
+      html += `
+        <div class="fact-detail-item">
+          <div>
+            <strong>✓ ${escapeHtml(item.claim || '')}</strong>
+            <p>${escapeHtml(item.evidence || '')}</p>
+          </div>
+
+          ${
+            item.source_url
+              ? `<a href="${escapeHtml(item.source_url)}"
+                    target="_blank"
+                    rel="noopener noreferrer">
+                   ${escapeHtml(item.source_name || '공식 출처')} ↗
+                 </a>`
+              : ''
+          }
+        </div>
+      `;
+    });
+
+    html += `
+        </div>
+      </details>
+    `;
+  }
+
+  resultsEl.innerHTML = html;
 
   box.classList.remove('hidden');
 }
