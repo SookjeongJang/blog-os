@@ -418,7 +418,35 @@ document.getElementById('copyTitleBtn')?.addEventListener('click', async () => {
 
 
 document.getElementById('copyHtmlBtn')?.addEventListener('click', async () => {
-  const html = document.getElementById('writerHtml')?.value || '';
+  const originalHtml = document.getElementById('writerHtml')?.value || '';
+
+  if (!originalHtml.trim()) {
+    alert('복사할 글이 없어요.');
+    return;
+  }
+
+  const safeHtml = originalHtml
+    .replace(
+      /<div class="related-button">[\s\S]*?href="INTERNAL_LINK_[^"]*"[\s\S]*?<\/div>/gi,
+      ''
+    )
+    .replace(
+      /<a[^>]*href="INTERNAL_LINK_[^"]*"[^>]*>[\s\S]*?<\/a>/gi,
+      ''
+    )
+    .trim();
+
+  await navigator.clipboard.writeText(safeHtml);
+
+  const btn = document.getElementById('copyHtmlBtn');
+  const original = btn.textContent;
+
+  btn.textContent = '✓ 발행용 HTML 복사됨';
+
+  setTimeout(() => {
+    btn.textContent = original;
+  }, 1500);
+});
 
   if (!html.trim()) {
     alert('복사할 글이 없어요.');
