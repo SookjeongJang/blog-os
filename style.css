@@ -129,3 +129,135 @@ body.light .bottom-nav{background:rgba(255,255,255,.9)}
   border-color: rgba(255, 194, 92, 0.28);
   color: #ffd27f;
 }
+
+
+/* ========================================
+   Blog OS V4 - 글 본문 CTA 버튼
+======================================== */
+
+/* 공식 사이트 이동 버튼 */
+.preview-html .official-action {
+  margin: 22px 0 26px;
+}
+
+.preview-html .official-action a {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 16px 20px;
+  border-radius: 14px;
+
+  background: linear-gradient(135deg, #6f5af7, #8b73ff);
+  color: #ffffff;
+
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+  text-decoration: none;
+
+  box-shadow: 0 8px 22px rgba(111, 90, 247, 0.20);
+
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.preview-html .official-action a:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(111, 90, 247, 0.28);
+}
+
+
+/* 관련글 이동 버튼 */
+.preview-html .related-button {
+  margin: 12px 0;
+}
+
+.preview-html .related-button a {
+  display: block;
+  box-sizing: border-box;
+
+  padding: 14px 17px;
+  border-radius: 12px;
+
+  border: 1px solid rgba(111, 90, 247, 0.28);
+  background: rgba(111, 90, 247, 0.07);
+
+  color: inherit;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.5;
+  text-decoration: none;
+
+  transition:
+    background 0.18s ease,
+    transform 0.18s ease;
+}
+
+.preview-html .related-button a:hover {
+  background: rgba(111, 90, 247, 0.13);
+  transform: translateX(3px);
+}
+
+
+/* 핵심 요약 박스 */
+.preview-html .summary-box {
+  margin: 22px 0;
+  padding: 18px 20px;
+
+  border-radius: 14px;
+  border: 1px solid rgba(111, 90, 247, 0.18);
+  background: rgba(111, 90, 247, 0.055);
+}
+
+.preview-html .summary-box strong {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.preview-html .summary-box ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.preview-html .summary-box li {
+  margin: 7px 0;
+  line-height: 1.6;
+}
+
+
+/* 다음 시리즈 */
+.preview-html .series-next {
+  margin: 26px 0;
+  padding: 18px 20px;
+
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.preview-html .series-next strong {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.preview-html .series-next li {
+  margin: 7px 0;
+  line-height: 1.5;
+}
+
+
+/* 모바일 */
+@media (max-width: 600px) {
+  .preview-html .official-action a {
+    padding: 15px 16px;
+    font-size: 15px;
+  }
+
+  .preview-html .summary-box,
+  .preview-html .series-next {
+    padding: 16px;
+  }
+}
