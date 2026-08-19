@@ -7,7 +7,7 @@ let currentDraftId = null;
 let liveTopics = JSON.parse(localStorage.getItem('blogos_live_topics') || '[]');
 let lastFactCheckResult = null;
 let lastFactCheckProblems = [];
-let lastVerifyWasRecheck = false;
+let lastVerifylastVerifyWasRecheck = false;
 
 const panels = {
   home: document.getElementById('homePanel'),
@@ -947,7 +947,7 @@ if (incorrectCount > 0) {
 } else if (needsCheckCount > 0) {
   statusEl.textContent = '⚠ 확인 후 발행';
 
-} else if (wasRecheck) {
+} else if (lastVerifyWasRecheck) {
   statusEl.textContent = '✓ 수정 확인 완료';
 
 } else {
@@ -1095,7 +1095,7 @@ try {
     Array.isArray(lastFactCheckProblems) &&
     lastFactCheckProblems.length > 0 &&
     !lastFactCheckResult;
-  lastVerifyWasRecheck = isRecheck;
+  lastVerifylastVerifyWasRecheck = isRecheck;
 
   const response = await fetch('/api/verify', {
     method: 'POST',
