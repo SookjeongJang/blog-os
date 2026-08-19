@@ -47,12 +47,14 @@ export default async function handler(req, res) {
   }
 
 
-  const {
-    title = "",
-    html = "",
-    source_url = "",
-    source_name = ""
-  } = req.body || {};
+const {
+  title = "",
+  html = "",
+  source_url = "",
+  source_name = "",
+  mode = "full",
+  recheck_items = []
+} = req.body || {};
 
 
   if (!title.trim()) {
@@ -79,9 +81,54 @@ export default async function handler(req, res) {
     }
   );
 
+const isRecheck =
+  mode === "recheck" &&
+  Array.isArray(recheck_items) &&
+  recheck_items.length > 0;
 
-  const prompt = `
+const recheckInstruction = isRecheck
+  ? `
+[재검증 모드 - 매우 중요]
+
+이번 요청은 새로운 팩트체크가 아니다.
+
+아래 항목은 이전 전체 검증에서
+이미 문제가 발견되어 수정한 항목이다.
+
+${JSON.stringify(recheck_items, null, 2)}
+
+반드시 위 항목만 다시 확인한다.
+
+규칙:
+
+1. 새로운 검증 항목을 추가하지 않는다.
+2. 이전에 문제가 없었던 문장을 새로 검사하지 않는다.
+3. 새로운 오류나 새로운 확인 필요 항목을 발굴하지 않는다.
+4. 위 항목이 수정된 현재 HTML에서 어떻게 표현됐는지만 확인한다.
+5. 공식 출처와 현재 수정 내용이 일치하면 verified로 판정한다.
+6. 여전히 공식 확인이 어려우면 needs_check로 판정한다.
+7. 공식 출처와 명백히 다르면 incorrect로 판정한다.
+8. checks 배열에는 위 재검증 대상에 대응하는 결과만 넣는다.
+9. 모든 재검증 대상이 verified라면 overall_status는 verified로 한다.
+
+이 단계의 목적은
+"새로운 문제 찾기"가 아니라
+"기존 문제가 해결됐는지 확인하기"다.
+`
+  : `
+[최초 전체 검증 모드]
+
+게시물의 핵심 사실을 전체적으로 검증한다.
+
+날짜, 금액, 대상, 신청기간, 지급일 등
+독자의 행동이나 판단에 영향을 주는 사실을 우선한다.
+
+사소한 표현 차이를 억지로 문제로 만들지 않는다.
+`;
+const prompt = `
 오늘은 대한민국 시간 기준 ${today}이다.
+
+${recheckInstruction}
 
 너는 한국 생활정보·경제정보 블로그의
 엄격한 팩트체커다.
