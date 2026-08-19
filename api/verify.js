@@ -125,6 +125,7 @@ ${JSON.stringify(recheck_items, null, 2)}
 
 사소한 표현 차이를 억지로 문제로 만들지 않는다.
 `;
+  
 const prompt = `
 오늘은 대한민국 시간 기준 ${today}이다.
 
