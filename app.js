@@ -152,32 +152,150 @@ function saveDraft() {
 }
 
 function renderDraft() {
-  const card=document.getElementById('draftCard');
-  const empty=document.getElementById('draftEmpty');
+  const card = document.getElementById('draftCard');
+  const empty = document.getElementById('draftEmpty');
 
-  if(!draft) {
-    card.innerHTML='';
+  if (!Array.isArray(drafts) || !drafts.length) {
+    card.innerHTML = '';
     empty.classList.remove('hidden');
     return;
   }
 
   empty.classList.add('hidden');
-  card.innerHTML=`<article class="idea-card">
-    <div class="tag-row"><span class="tag">${escapeHtml(draft.category||'기타')}</span></div>
-    <h4>${escapeHtml(draft.title||'제목 없음')}</h4>
-    <p>${escapeHtml(draft.point||'저장된 초안이 있어요.')}</p>
-    <button class="small-btn primary" id="continueDraftBtn">계속 작성</button>
-  </article>`;
 
-  document.getElementById('continueDraftBtn').onclick=()=>{
-    document.getElementById('writerCategory').value=draft.category||'';
-    document.getElementById('writerTitle').value=draft.title||'';
-    document.getElementById('writerPoint').value=draft.point||'';
-    document.getElementById('writerHtml').value=draft.html||'';
-    hideAiError();
-    showView('writer');
-  };
+  const sortedDrafts = [...drafts].sort(
+    (a, b) =>
+      new Date(b.updatedAt || 0) -
+      new Date(a.updatedAt || 0)
+  );
+
+  card.innerHTML = sortedDrafts.map(item => {
+    const updated = item.updatedAt
+      ? new Date(item.updatedAt).toLocaleString('ko-KR', {
+          month: 'numeric',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      : '';
+
+    return `
+      <article class="idea-card draft-list-card">
+
+        <div class="idea-top">
+          <div>
+            <div class="tag-row">
+              <span class="tag">
+                ${escapeHtml(item.category || '기타')}
+              </span>
+
+              <span class="tag">
+                ${escapeHtml(item.status || '초안')}
+              </span>
+            </div>
+
+            <h4>
+              ${escapeHtml(item.title || '제목 없음')}
+            </h4>
+          </div>
+        </div>
+
+        ${
+          item.point
+            ? `<p>${escapeHtml(item.point)}</p>`
+            : ''
+        }
+
+        ${
+          updated
+            ? `<small class="draft-updated">
+                 마지막 수정 ${escapeHtml(updated)}
+               </small>`
+            : ''
+        }
+
+        <div class="topic-actions">
+          <button
+            class="small-btn primary"
+            onclick="continueDraft('${item.id}')"
+          >
+            계속 작성
+          </button>
+
+          <button
+            class="small-btn"
+            onclick="deleteDraft('${item.id}')"
+          >
+            삭제
+          </button>
+        </div>
+
+      </article>
+    `;
+  }).join('');
 }
+
+window.continueDraft = function(id) {
+  const item = drafts.find(
+    draft => draft.id === id
+  );
+
+  if (!item) return;
+
+  currentDraftId = item.id;
+
+  document.getElementById('writerCategory').value =
+    item.category || '';
+
+  document.getElementById('writerTitle').value =
+    item.title || '';
+
+  document.getElementById('writerPoint').value =
+    item.point || '';
+
+  document.getElementById('writerHtml').value =
+    item.html || '';
+
+  lastFactCheckResult = null;
+  lastFactCheckProblems = [];
+
+  document
+    .getElementById('factCheckBox')
+    ?.classList.add('hidden');
+
+  document
+    .getElementById('publishCheckBox')
+    ?.classList.add('hidden');
+
+  hideAiError();
+  showView('writer');
+};
+
+
+window.deleteDraft = function(id) {
+  const ok = confirm(
+    '이 초안을 삭제할까요?'
+  );
+
+  if (!ok) return;
+
+  drafts = drafts.filter(
+    draft => draft.id !== id
+  );
+
+  if (currentDraftId === id) {
+    currentDraftId = null;
+  }
+
+  localStorage.setItem(
+    'blogos_drafts',
+    JSON.stringify(drafts)
+  );
+
+  renderDraft();
+
+  showToast('초안을 삭제했어요');
+};
 
 function renderPreview() {
   draft=getWriterDraft();
