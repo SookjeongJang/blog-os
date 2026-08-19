@@ -955,3 +955,97 @@ document
     'click',
     verifyFacts
   );
+
+async function fixVerifiedFacts() {
+  if (!lastFactCheckResult) {
+    alert('먼저 사실 검증을 해주세요.');
+    return;
+  }
+
+  const title =
+    document.getElementById('writerTitle')?.value.trim() || '';
+
+  const html =
+    document.getElementById('writerHtml')?.value || '';
+
+  const btn = document.getElementById('fixFactsBtn');
+
+  if (!html.trim()) {
+    alert('수정할 글이 없어요.');
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '✨ 수정하고 있어요...';
+  }
+
+  try {
+    const response = await fetch('/api/fix', {
+      method: 'POST',
+
+      headers: {
+        'Content-Type': 'application/json'
+      },
+
+      body: JSON.stringify({
+        title,
+        html,
+        verification: lastFactCheckResult,
+        source_url: window.currentSourceUrl || '',
+        source_name: window.currentSourceName || ''
+      })
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+        `수정 요청 실패 (${response.status})`
+      );
+    }
+
+    if (!data.html) {
+      throw new Error('수정된 글을 받지 못했어요.');
+    }
+
+    /* 수정된 HTML로 교체 */
+    document.getElementById('writerHtml').value = data.html;
+
+    /* 기존 검증 결과는 더 이상 유효하지 않음 */
+    lastFactCheckResult = null;
+
+    document
+      .getElementById('factCheckBox')
+      ?.classList.add('hidden');
+
+    document
+      .getElementById('factFixActions')
+      ?.classList.add('hidden');
+
+    showToast('검증 결과를 반영해서 수정했어요 ✨');
+
+  } catch (error) {
+    console.error(error);
+
+    showFactCheckError(
+      error.message ||
+      '글을 수정하는 중 오류가 발생했어요.'
+    );
+
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '✨ 검증 결과 반영해서 수정';
+    }
+  }
+}
+
+
+document
+  .getElementById('fixFactsBtn')
+  ?.addEventListener(
+    'click',
+    fixVerifiedFacts
+  );
