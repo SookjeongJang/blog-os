@@ -941,11 +941,6 @@ function renderFactCheck(result) {
 const incorrectCount = Number(result.incorrect_count || 0);
 const needsCheckCount = Number(result.needs_check_count || 0);
 
-const wasRecheck =
-  Array.isArray(lastFactCheckProblems) &&
-  lastFactCheckProblems.length > 0 &&
-  !lastFactCheckResult;
-
 if (incorrectCount > 0) {
   statusEl.textContent = '! 수정 후 발행';
 
