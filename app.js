@@ -924,12 +924,19 @@ async function verifyFacts() {
         'Content-Type': 'application/json'
       },
 
-      body: JSON.stringify({
-        title,
-        html,
-        source_url: window.currentSourceUrl || '',
-        source_name: window.currentSourceName || ''
-      })
+      const isRecheck =
+  Array.isArray(lastFactCheckProblems) &&
+  lastFactCheckProblems.length > 0 &&
+  !lastFactCheckResult;
+
+body: JSON.stringify({
+  title,
+  html,
+  source_url: window.currentSourceUrl || '',
+  source_name: window.currentSourceName || '',
+  mode: isRecheck ? 'recheck' : 'full',
+  recheck_items: isRecheck ? lastFactCheckProblems : []
+})
     });
 
     const data = await response.json().catch(() => ({}));
