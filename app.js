@@ -916,30 +916,30 @@ async function verifyFacts() {
 
   setFactCheckLoading(true);
 
-  try {
-    const response = await fetch('/api/verify', {
-      method: 'POST',
+try {
+  const isRecheck =
+    Array.isArray(lastFactCheckProblems) &&
+    lastFactCheckProblems.length > 0 &&
+    !lastFactCheckResult;
 
-      headers: {
-        'Content-Type': 'application/json'
-      },
+  const response = await fetch('/api/verify', {
+    method: 'POST',
 
-      const isRecheck =
-  Array.isArray(lastFactCheckProblems) &&
-  lastFactCheckProblems.length > 0 &&
-  !lastFactCheckResult;
+    headers: {
+      'Content-Type': 'application/json'
+    },
 
-body: JSON.stringify({
-  title,
-  html,
-  source_url: window.currentSourceUrl || '',
-  source_name: window.currentSourceName || '',
-  mode: isRecheck ? 'recheck' : 'full',
-  recheck_items: isRecheck ? lastFactCheckProblems : []
-})
-    });
+    body: JSON.stringify({
+      title,
+      html,
+      source_url: window.currentSourceUrl || '',
+      source_name: window.currentSourceName || '',
+      mode: isRecheck ? 'recheck' : 'full',
+      recheck_items: isRecheck ? lastFactCheckProblems : []
+    })
+  });
 
-    const data = await response.json().catch(() => ({}));
+  const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
       throw new Error(
