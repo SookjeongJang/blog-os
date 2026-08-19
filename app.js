@@ -310,6 +310,21 @@ window.writeLiveTopic = function(index) {
 
   window.currentSourceUrl = t.source_url || '';
   window.currentSourceName = t.source_name || '';
+
+  lastFactCheckResult = null;
+lastFactCheckProblems = [];
+
+document
+  .getElementById('factCheckBox')
+  ?.classList.add('hidden');
+
+document
+  .getElementById('factFixActions')
+  ?.classList.add('hidden');
+
+document
+  .getElementById('publishCheckBox')
+  ?.classList.add('hidden');
   
   document.getElementById('writerCategory').value = t.category || '';
   document.getElementById('writerTitle').value = t.title || '';
