@@ -2,7 +2,8 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwCOyxrS93IRXDM-bKdmVeo
 
 let ideas = [];
 let activeCategory = '전체';
-let draft = JSON.parse(localStorage.getItem('blogos_draft') || 'null');
+let drafts = JSON.parse(localStorage.getItem('blogos_drafts') || '[]');
+let currentDraftId = null;
 let liveTopics = JSON.parse(localStorage.getItem('blogos_live_topics') || '[]');
 let lastFactCheckResult = null;
 let lastFactCheckProblems = [];
@@ -110,8 +111,43 @@ function getWriterDraft() {
 }
 
 function saveDraft() {
-  draft=getWriterDraft();
-  localStorage.setItem('blogos_draft',JSON.stringify(draft));
+  const current = getWriterDraft();
+
+  if (!current.title.trim()) {
+    alert('제목이 없어요.');
+    return;
+  }
+
+  const now = new Date().toISOString();
+
+  if (currentDraftId) {
+    drafts = drafts.map(item =>
+      item.id === currentDraftId
+        ? {
+            ...item,
+            ...current,
+            updatedAt: now
+          }
+        : item
+    );
+  } else {
+    const newDraft = {
+      id: `draft_${Date.now()}`,
+      ...current,
+      createdAt: now,
+      updatedAt: now,
+      status: '초안'
+    };
+
+    drafts.unshift(newDraft);
+    currentDraftId = newDraft.id;
+  }
+
+  localStorage.setItem(
+    'blogos_drafts',
+    JSON.stringify(drafts)
+  );
+
   showToast('초안을 저장했어요');
 }
 
@@ -307,6 +343,7 @@ function renderLiveTopics() {
 window.writeLiveTopic = function(index) {
   const t = liveTopics[index];
   if (!t) return;
+  currentDraftId = null;
 
   window.currentSourceUrl = t.source_url || '';
   window.currentSourceName = t.source_name || '';
