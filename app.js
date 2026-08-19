@@ -755,13 +755,35 @@ function renderFactCheck(result) {
   );
 
   /* 전체 판정 */
-  if (result.overall_status === 'verified') {
-    statusEl.textContent = '✓ 발행 가능';
-  } else if (result.overall_status === 'review') {
-    statusEl.textContent = '⚠ 확인 후 발행';
-  } else {
-    statusEl.textContent = '! 수정 후 발행';
-  }
+const incorrectCount = Number(result.incorrect_count || 0);
+const needsCheckCount = Number(result.needs_check_count || 0);
+
+if (incorrectCount > 0) {
+  statusEl.textContent = '! 수정 후 발행';
+
+} else if (needsCheckCount > 0) {
+  statusEl.textContent = '⚠ 확인 후 발행';
+
+} else {
+  statusEl.textContent = '✓ 발행 가능';
+}
+
+
+/* 문제가 있을 때만 수정 버튼 표시 */
+
+const fixActions =
+  document.getElementById('factFixActions');
+
+if (fixActions) {
+  const hasProblem =
+    incorrectCount > 0 ||
+    needsCheckCount > 0;
+
+  fixActions.classList.toggle(
+    'hidden',
+    !hasProblem
+  );
+}
 
   summaryEl.textContent =
     `확인 ${result.verified_count || 0} · ` +
