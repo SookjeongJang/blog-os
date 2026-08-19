@@ -5,6 +5,7 @@ let activeCategory = '전체';
 let draft = JSON.parse(localStorage.getItem('blogos_draft') || 'null');
 let liveTopics = JSON.parse(localStorage.getItem('blogos_live_topics') || '[]');
 let lastFactCheckResult = null;
+let lastFactCheckProblems = [];
 
 const panels = {
   home: document.getElementById('homePanel'),
@@ -735,6 +736,14 @@ function hideFactCheckError() {
 
 function renderFactCheck(result) {
     lastFactCheckResult = result;
+  
+  lastFactCheckProblems = Array.isArray(result.checks)
+  ? result.checks.filter(
+      item =>
+        item.status === 'incorrect' ||
+        item.status === 'needs_check'
+    )
+  : [];
   
   const box = document.getElementById('factCheckBox');
   const statusEl = document.getElementById('factCheckStatus');
