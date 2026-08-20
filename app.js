@@ -127,10 +127,13 @@ window.startWriting = function(id) {
 
 function getWriterDraft() {
   return {
-    category:document.getElementById('writerCategory').value.trim(),
-    title:document.getElementById('writerTitle').value.trim(),
-    point:document.getElementById('writerPoint').value.trim(),
-    html:document.getElementById('writerHtml').value
+    category: document.getElementById('writerCategory').value.trim(),
+    title: document.getElementById('writerTitle').value.trim(),
+    point: document.getElementById('writerPoint').value.trim(),
+    html: document.getElementById('writerHtml').value.trim(),
+
+    source_url: window.currentSourceUrl || '',
+    source_name: window.currentSourceName || ''
   };
 }
 
@@ -267,7 +270,9 @@ window.continueDraft = function(id) {
   if (!item) return;
 
   currentDraftId = item.id;
-
+window.currentSourceUrl = item.source_url || '';
+window.currentSourceName = item.source_name || '';
+  
   document.getElementById('writerCategory').value =
     item.category || '';
 
