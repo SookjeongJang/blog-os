@@ -7,7 +7,7 @@ let currentDraftId = null;
 let liveTopics = JSON.parse(localStorage.getItem('blogos_live_topics') || '[]');
 let lastFactCheckResult = null;
 let lastFactCheckProblems = [];
-let lastVerifylastVerifyWasRecheck = false;
+let lastVerifyWasRecheck = false;
 
 const panels = {
   home: document.getElementById('homePanel'),
@@ -91,13 +91,36 @@ window.setCategory=function(encoded) {
   renderIdeas();
 };
 
-window.startWriting=function(id) {
-  const item=ideas.find(i=>i.id===id);
-  if(!item) return;
-  document.getElementById('writerCategory').value=item.category;
-  document.getElementById('writerTitle').value=item.title;
-  document.getElementById('writerPoint').value=item.point;
-  document.getElementById('writerHtml').value='';
+
+window.startWriting = function(id) {
+  const item = ideas.find(i => i.id === id);
+  if (!item) return;
+
+  currentDraftId = null;
+  lastFactCheckResult = null;
+  lastFactCheckProblems = [];
+  lastVerifyWasRecheck = false;
+
+  window.currentSourceUrl = '';
+  window.currentSourceName = '';
+
+  document.getElementById('writerCategory').value = item.category;
+  document.getElementById('writerTitle').value = item.title;
+  document.getElementById('writerPoint').value = item.point;
+  document.getElementById('writerHtml').value = '';
+
+  document
+    .getElementById('factCheckBox')
+    ?.classList.add('hidden');
+
+  document
+    .getElementById('factFixActions')
+    ?.classList.add('hidden');
+
+  document
+    .getElementById('publishCheckBox')
+    ?.classList.add('hidden');
+
   hideAiError();
   showView('writer');
 };
@@ -259,6 +282,7 @@ window.continueDraft = function(id) {
 
   lastFactCheckResult = null;
   lastFactCheckProblems = [];
+  lastVerifyWasRecheck = false;
 
   document
     .getElementById('factCheckBox')
@@ -299,12 +323,19 @@ window.deleteDraft = function(id) {
 };
 
 function renderPreview() {
-  draft=getWriterDraft();
-  localStorage.setItem('blogos_draft',JSON.stringify(draft));
-  document.getElementById('previewCategory').textContent=draft.category||'기타';
-  document.getElementById('previewTitle').textContent=draft.title||'제목 없음';
-  document.getElementById('previewPoint').textContent=draft.point||'';
-  document.getElementById('previewHtml').innerHTML=draft.html||'<p>HTML 본문이 아직 없어요.</p>';
+  const draft = getWriterDraft();
+
+  document.getElementById('previewCategory').textContent =
+    draft.category || '기타';
+
+  document.getElementById('previewTitle').textContent =
+    draft.title || '제목 없음';
+
+  document.getElementById('previewPoint').textContent =
+    draft.point || '';
+
+  document.getElementById('previewHtml').innerHTML =
+    draft.html || '<p>HTML 본문이 아직 없어요.</p>';
 }
 
 function setAiLoading(on) {
@@ -360,8 +391,6 @@ async function generateAiDraft() {
     if(!data.html) throw new Error('AI 응답에 HTML이 없어요.');
 
     document.getElementById('writerHtml').value=data.html;
-    draft=getWriterDraft();
-    localStorage.setItem('blogos_draft',JSON.stringify(draft));
     showToast('AI 초안이 완성됐어요 ✨');
   } catch(error) {
     console.error(error);
@@ -468,7 +497,8 @@ window.writeLiveTopic = function(index) {
   window.currentSourceName = t.source_name || '';
 
   lastFactCheckResult = null;
-lastFactCheckProblems = [];
+  lastFactCheckProblems = [];
+  lastVerifyWasRecheck = false;
 
 document
   .getElementById('factCheckBox')
@@ -1095,7 +1125,7 @@ try {
     Array.isArray(lastFactCheckProblems) &&
     lastFactCheckProblems.length > 0 &&
     !lastFactCheckResult;
-  lastVerifylastVerifyWasRecheck = isRecheck;
+  lastVerifyWasRecheck = isRecheck;
 
   const response = await fetch('/api/verify', {
     method: 'POST',
