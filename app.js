@@ -137,6 +137,55 @@ function getWriterDraft() {
   };
 }
 
+function getRelatedPublishedDrafts() {
+  const current = getWriterDraft();
+
+  const currentWords = [
+    current.category,
+    current.title,
+    current.point
+  ]
+    .join(' ')
+    .toLowerCase()
+    .split(/[\s,/·]+/)
+    .filter(word => word.length >= 2);
+
+  return drafts
+    .filter(item =>
+      item.status === '발행완료' &&
+      item.publishedUrl &&
+      item.id !== currentDraftId
+    )
+    .map(item => {
+      const targetText = [
+        item.category,
+        item.title,
+        item.point
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      const score = currentWords.reduce(
+        (total, word) =>
+          targetText.includes(word)
+            ? total + 1
+            : total,
+        0
+      );
+
+      return {
+        ...item,
+        relatedScore: score
+      };
+    })
+    .filter(item => item.relatedScore > 0)
+    .sort(
+      (a, b) =>
+        b.relatedScore - a.relatedScore
+    )
+    .slice(0, 3);
+}
+
 function saveDraft() {
   const current = getWriterDraft();
 
