@@ -258,26 +258,81 @@ function renderDraft() {
             : ''
         }
 
-        <div class="topic-actions">
-          <button
-            class="small-btn primary"
-            onclick="continueDraft('${item.id}')"
-          >
-            계속 작성
-          </button>
+<div class="topic-actions">
+  <button
+    class="small-btn primary"
+    onclick="continueDraft('${item.id}')"
+  >
+    계속 작성
+  </button>
 
-          <button
-            class="small-btn"
-            onclick="deleteDraft('${item.id}')"
-          >
-            삭제
-          </button>
-        </div>
+  ${
+    item.status === '발행대기'
+      ? `
+        <button
+          class="small-btn"
+          onclick="markDraftPublished('${item.id}')"
+        >
+          발행 완료
+        </button>
+      `
+      : ''
+  }
+
+  <button
+    class="small-btn"
+    onclick="deleteDraft('${item.id}')"
+  >
+    삭제
+  </button>
+</div>
 
       </article>
     `;
   }).join('');
 }
+
+window.markDraftPublished = function(id) {
+  const item = drafts.find(
+    draft => draft.id === id
+  );
+
+  if (!item) return;
+
+  const url = prompt(
+    '발행한 글 주소를 붙여넣어 주세요.'
+  );
+
+  if (url === null) return;
+
+  const cleanUrl = url.trim();
+
+  if (!cleanUrl) {
+    alert('발행 URL을 입력해 주세요.');
+    return;
+  }
+
+  drafts = drafts.map(draft =>
+    draft.id === id
+      ? {
+          ...draft,
+          status: '발행완료',
+          publishedUrl: cleanUrl,
+          publishedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      : draft
+  );
+
+  localStorage.setItem(
+    'blogos_drafts',
+    JSON.stringify(drafts)
+  );
+
+  renderDraft();
+
+  showToast('발행완료로 저장했어요 🎉');
+};
 
 window.continueDraft = function(id) {
   const item = drafts.find(
