@@ -186,6 +186,71 @@ function getRelatedPublishedDrafts() {
     .slice(0, 3);
 }
 
+/*관련 발행글 추천 박스를 실제로 채우는 함수*/
+function renderRelatedPublishedDrafts() {
+  const box = document.getElementById('relatedPostsBox');
+  const list = document.getElementById('relatedPostsList');
+
+  if (!box || !list) return;
+
+  const related = getRelatedPublishedDrafts();
+
+  if (!related.length) {
+    list.innerHTML = '';
+    box.classList.add('hidden');
+    return;
+  }
+
+  list.innerHTML = related.map(item => `
+    <div class="related-post-item">
+      <div>
+        <strong>${escapeHtml(item.title || '제목 없음')}</strong>
+        <small>${escapeHtml(item.category || '기타')}</small>
+      </div>
+
+      <button
+        class="small-btn"
+        onclick="insertRelatedPost('${item.id}')"
+      >
+        글에 넣기
+      </button>
+    </div>
+  `).join('');
+
+  box.classList.remove('hidden');
+}
+/*글에 넣기 버튼 기능 추*/
+window.insertRelatedPost = function(id) {
+  const item = drafts.find(
+    draft =>
+      draft.id === id &&
+      draft.status === '발행완료' &&
+      draft.publishedUrl
+  );
+
+  if (!item) {
+    alert('발행된 글 정보를 찾지 못했어요.');
+    return;
+  }
+
+  const editor = document.getElementById('writerHtml');
+
+  if (!editor) return;
+
+  const block = `
+
+<div class="related-button">
+  <a href="${escapeHtml(item.publishedUrl)}" target="_blank" rel="noopener noreferrer">
+    ${escapeHtml(item.title)} →
+  </a>
+</div>
+`;
+
+  editor.value = `${editor.value.trim()}\n${block}`.trim();
+
+  showToast('관련 글을 본문에 넣었어요 🔗');
+};
+
 function saveDraft() {
   const current = getWriterDraft();
 
@@ -433,6 +498,7 @@ window.currentSourceName = item.source_name || '';
 
   hideAiError();
   showView('writer');
+  renderRelatedPublishedDrafts();
 };
 
 
@@ -662,6 +728,8 @@ document
 
   hideAiError();
   showView('writer');
+
+  renderRelatedPublishedDrafts();
 };
 
 async function findLiveTopics() {
