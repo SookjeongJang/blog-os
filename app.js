@@ -177,7 +177,24 @@ function saveDraft() {
 
   showToast('초안을 저장했어요');
 }
+function updateCurrentDraftStatus(status) {
+  if (!currentDraftId) return;
 
+  drafts = drafts.map(item =>
+    item.id === currentDraftId
+      ? {
+          ...item,
+          status,
+          updatedAt: new Date().toISOString()
+        }
+      : item
+  );
+
+  localStorage.setItem(
+    'blogos_drafts',
+    JSON.stringify(drafts)
+  );
+}
 function renderDraft() {
   const card = document.getElementById('draftCard');
   const empty = document.getElementById('draftEmpty');
@@ -989,6 +1006,12 @@ if (incorrectCount > 0) {
   statusEl.textContent = '✓ 발행 가능';
 }
 
+  if (
+  incorrectCount === 0 &&
+  needsCheckCount === 0
+) {
+  updateCurrentDraftStatus('발행대기');
+}
 
 /* 문제가 있을 때만 수정 버튼 표시 */
 
@@ -1124,7 +1147,9 @@ async function verifyFacts() {
   box?.classList.remove('hidden');
 
   setFactCheckLoading(true);
+updateCurrentDraftStatus('검증중');
 
+  
 try {
   const isRecheck =
     Array.isArray(lastFactCheckProblems) &&
