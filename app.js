@@ -278,7 +278,20 @@ function renderDraft() {
       `
       : ''
   }
-
+${
+  item.status === '발행완료' && item.publishedUrl
+    ? `
+      <a
+        class="small-btn"
+        href="${escapeHtml(item.publishedUrl)}"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        발행 글 보기 ↗
+      </a>
+    `
+    : ''
+}
   <button
     class="small-btn"
     onclick="deleteDraft('${item.id}')"
