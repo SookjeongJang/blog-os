@@ -150,8 +150,9 @@ ${JSON.stringify(problems, null, 2)}
 8. official-action 버튼의 URL은
    검증된 공식 URL만 사용한다.
 
-9. INTERNAL_LINK_1, INTERNAL_LINK_2 등
-   내부링크 placeholder는 그대로 유지한다.
+9. 실제 URL이 없는 내부 링크 버튼은 만들지 않는다.
+기존 HTML에 INTERNAL_LINK, href="#" 등
+placeholder 링크가 있다면 제거한다.
 
 10. 아래 광고 placeholder도 그대로 유지한다.
 
