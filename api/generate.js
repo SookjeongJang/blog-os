@@ -45,8 +45,10 @@ export default async function handler(req, res) {
     title = "",
     point = "",
     source_url = "",
-    source_name = ""
-  } = req.body || {};
+    source_name = "",
+    parent_title = "",
+    parent_draft_id = ""
+  } = req.body || {};  
 
   if (!title.trim()) {
     return res.status(400).json({
@@ -78,7 +80,21 @@ ${title}
 
 글감 단계에서 확인한 핵심 정보:
 ${point}
+${parent_title ? `
+[후속 글 작성 안내]
 
+이 글은 아래 기존 글에서 이어지는 후속 글이다.
+
+이전 글 제목:
+${parent_title}
+
+작성 원칙:
+- 이전 글의 내용을 그대로 반복하지 않는다.
+- 이번 글의 제목 "${title}"이 가진 검색 의도에 집중한다.
+- 독자가 이전 글을 읽지 않았어도 이해할 수 있게 작성한다.
+- 필요한 배경 설명만 짧게 제공한다.
+- 이전 글과 자연스럽게 이어지는 시리즈 글처럼 작성한다.
+` : ""}
 검증된 공식 출처:
 기관명: ${source_name || "없음"}
 URL: ${source_url || "없음"}
