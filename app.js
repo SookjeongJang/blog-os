@@ -240,16 +240,16 @@ function renderNextPostIdeas() {
     return;
   }
 
-  // 다음 글 영역 안의 텍스트 후보 수집
-  const candidates = [
-    ...seriesNext.querySelectorAll('a, li, strong, p')
-  ]
-    .map(el => el.textContent.trim())
-    .filter(text =>
-      text &&
-      text.length >= 5 &&
-      text.length <= 120
-    );
+// 다음 글 영역에서 실제 추천 제목만 수집
+const candidates = [
+  ...seriesNext.querySelectorAll('a, li')
+]
+  .map(el => el.textContent.trim())
+  .filter(text =>
+    text &&
+    text.length >= 5 &&
+    text.length <= 120
+  );
 
   // 중복 제거
   const ideas = [...new Set(candidates)].slice(0, 3);
