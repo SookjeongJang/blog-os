@@ -219,7 +219,108 @@ function renderRelatedPublishedDrafts() {
 
   box.classList.remove('hidden');
 }
-/*글에 넣기 버튼 기능 추*/
+/*초안 만들기 버튼*/
+function renderNextPostIdeas() {
+  const box = document.getElementById('nextPostIdeasBox');
+  const list = document.getElementById('nextPostIdeasList');
+  const html = document.getElementById('writerHtml')?.value || '';
+
+  if (!box || !list) return;
+
+  // 현재 글 HTML을 임시로 읽기
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+
+  // AI가 만든 "다음 글" 영역 찾기
+  const seriesNext = temp.querySelector('.series-next');
+
+  if (!seriesNext) {
+    list.innerHTML = '';
+    box.classList.add('hidden');
+    return;
+  }
+
+  // 다음 글 영역 안의 텍스트 후보 수집
+  const candidates = [
+    ...seriesNext.querySelectorAll('a, li, strong, p')
+  ]
+    .map(el => el.textContent.trim())
+    .filter(text =>
+      text &&
+      text.length >= 5 &&
+      text.length <= 120
+    );
+
+  // 중복 제거
+  const ideas = [...new Set(candidates)].slice(0, 3);
+
+  if (!ideas.length) {
+    list.innerHTML = '';
+    box.classList.add('hidden');
+    return;
+  }
+
+  list.innerHTML = ideas.map((title, index) => `
+    <div class="related-post-item">
+      <div>
+        <strong>${escapeHtml(title)}</strong>
+        <small>다음 글 추천</small>
+      </div>
+
+      <button
+        class="small-btn"
+        onclick="createNextPostDraft(${index})"
+      >
+        초안 만들기
+      </button>
+    </div>
+  `).join('');
+
+  // 나중에 버튼에서 사용
+  window.nextPostIdeas = ideas;
+
+  box.classList.remove('hidden');
+}
+
+/*초안 만들기 버튼이 실제로 새 초안을 저장하도록 함수*/
+function createNextPostDraft(index) {
+  const title = window.nextPostIdeas?.[index];
+
+  if (!title) {
+    alert('추천 글 제목을 찾지 못했어요.');
+    return;
+  }
+
+  const current = getWriterDraft();
+
+  const newDraft = {
+    id: `draft_${Date.now()}`,
+    category: current.category || '기타',
+    title: title,
+    point: `${current.title || '현재 글'}에서 이어지는 다음 글`,
+    html: '',
+    status: '초안',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+
+    // 현재 글과 연결 관계 저장
+    parentDraftId: currentDraftId || null,
+    parentTitle: current.title || ''
+  };
+
+  drafts.unshift(newDraft);
+
+  localStorage.setItem(
+    'blogos_drafts',
+    JSON.stringify(drafts)
+  );
+
+  renderDraft();
+
+  alert('다음 글이 새 초안으로 저장됐어요 🌱');
+}
+
+/*글에 넣기 버튼 기능 추가*/
 window.insertRelatedPost = function(id) {
   const item = drafts.find(
     draft =>
@@ -499,6 +600,7 @@ window.currentSourceName = item.source_name || '';
   hideAiError();
   showView('writer');
   renderRelatedPublishedDrafts();
+  renderNextPostIdeas();
 };
 
 
@@ -730,6 +832,7 @@ document
   showView('writer');
 
   renderRelatedPublishedDrafts();
+  renderNextPostIdeas();
 };
 
 async function findLiveTopics() {
