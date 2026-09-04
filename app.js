@@ -347,7 +347,19 @@ window.insertRelatedPost = function(id) {
 </div>
 `;
 
-  editor.value = `${editor.value.trim()}\n${block}`.trim();
+  const html = editor.value.trim();
+  
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+  
+  const seriesNext = temp.querySelector('.series-next');
+  
+  if (seriesNext) {
+    seriesNext.insertAdjacentHTML('beforebegin', block);
+    editor.value = temp.innerHTML.trim();
+  } else {
+    editor.value = `${html}\n${block}`.trim();
+  }
 
   showToast('관련 글을 본문에 넣었어요 🔗');
 };
