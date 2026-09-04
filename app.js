@@ -685,7 +685,13 @@ async function generateAiDraft() {
           title,
           point,
           source_url: window.currentSourceUrl || '',
-          source_name: window.currentSourceName || ''
+          source_name: window.currentSourceName || '',
+          parent_title: currentDraftId
+            ? drafts.find(item => item.id === currentDraftId)?.parentTitle || ''
+            : '',
+          parent_draft_id: currentDraftId
+            ? drafts.find(item => item.id === currentDraftId)?.parentDraftId || ''
+            : ''
         })
       });
 
