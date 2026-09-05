@@ -140,6 +140,12 @@ function getWriterDraft() {
 function getRelatedPublishedDrafts() {
   const current = getWriterDraft();
 
+  const currentItem = currentDraftId
+    ? drafts.find(item => item.id === currentDraftId)
+    : null;
+
+  const parentId = currentItem?.parentDraftId || null;
+
   const currentWords = [
     current.category,
     current.title,
@@ -150,12 +156,18 @@ function getRelatedPublishedDrafts() {
     .split(/[\s,/·]+/)
     .filter(word => word.length >= 2);
 
-  return drafts
-    .filter(item =>
-      item.status === '발행완료' &&
-      item.publishedUrl &&
-      item.id !== currentDraftId
-    )
+  const published = drafts.filter(item =>
+    item.status === '발행완료' &&
+    item.publishedUrl &&
+    item.id !== currentDraftId
+  );
+
+  const parentPost = parentId
+    ? published.find(item => item.id === parentId)
+    : null;
+
+  const relatedPosts = published
+    .filter(item => item.id !== parentId)
     .map(item => {
       const targetText = [
         item.category,
@@ -182,8 +194,20 @@ function getRelatedPublishedDrafts() {
     .sort(
       (a, b) =>
         b.relatedScore - a.relatedScore
-    )
-    .slice(0, 3);
+    );
+
+  const result = [];
+
+  if (parentPost) {
+    result.push({
+      ...parentPost,
+      isParentPost: true
+    });
+  }
+
+  result.push(...relatedPosts);
+
+  return result.slice(0, 3);
 }
 
 /*관련 발행글 추천 박스를 실제로 채우는 함수*/
