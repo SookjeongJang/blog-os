@@ -229,7 +229,10 @@ function renderRelatedPublishedDrafts() {
     <div class="related-post-item">
       <div>
         <strong>${escapeHtml(item.title || '제목 없음')}</strong>
-        <small>${escapeHtml(item.category || '기타')}</small>
+        <small>
+          ${item.isParentPost ? '이전 글 · ' : ''}
+          ${escapeHtml(item.category || '기타')}
+        </small>
       </div>
 
       <button
