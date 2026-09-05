@@ -477,6 +477,15 @@ function renderDraft() {
         })
       : '';
 
+/*2026-9-6 -업데이트 “나를 parentDraftId로 가지고 있는 후속글 중에서
+이미 발행완료 + URL 저장된 글이 있나?” 를 찾아주는 거야.*/
+    
+    const publishedChild = drafts.find(draft =>
+      draft.parentDraftId === item.id &&
+      draft.status === '발행완료' &&
+      draft.publishedUrl
+    );    
+    
     return `
       <article class="idea-card draft-list-card">
 
@@ -546,6 +555,20 @@ ${
     `
     : ''
 }
+
+/*2026-09-06_4원글 카드에 🌱 다음 글 연결하기 버튼*/
+${
+  publishedChild
+    ? `
+      <button
+        class="small-btn"
+        onclick="connectNextPost('${item.id}', '${publishedChild.id}')"
+      >
+        🌱 다음 글 연결하기
+      </button>
+    `
+    : ''
+}
   <button
     class="small-btn"
     onclick="deleteDraft('${item.id}')"
@@ -599,6 +622,32 @@ window.markDraftPublished = function(id) {
   renderDraft();
 
   showToast('발행완료로 저장했어요 🎉');
+};
+
+window.connectNextPost = function(parentId, childId) {
+  const parent = drafts.find(item => item.id === parentId);
+  const child = drafts.find(item => item.id === childId);
+
+  if (!parent || !child || !child.publishedUrl) {
+    alert('연결할 후속글 정보를 찾지 못했어요.');
+    return;
+  }
+
+  const block = `
+<div class="related-button">
+  <a href="${escapeHtml(child.publishedUrl)}" target="_blank" rel="noopener noreferrer">
+    다음 글 보기 → ${escapeHtml(child.title)}
+  </a>
+</div>
+  `.trim();
+
+  navigator.clipboard.writeText(block)
+    .then(() => {
+      showToast('원글에 넣을 다음 글 버튼 HTML을 복사했어요 🌱');
+    })
+    .catch(() => {
+      alert('복사에 실패했어요.');
+    });
 };
 
 window.continueDraft = function(id) {
